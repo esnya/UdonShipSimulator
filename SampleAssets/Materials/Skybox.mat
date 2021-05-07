@@ -1,0 +1,127 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Skybox
+  m_Shader: {fileID: 4800000, guid: 761503b1c7c8f064db222ff383925028, type: 3}
+  m_ShaderKeywords: _TURBULENCE_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _cloudMap:
+        m_Texture: {fileID: 2800000, guid: cea234beaee8df04c875cb02d401c64d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _rimMap:
+        m_Texture: {fileID: 2800000, guid: 16f9b3b8a6d991a4aa23802cff345755, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _skyMap:
+        m_Texture: {fileID: 2800000, guid: 4e2c6c836e1f2f3479f92f6e1d700a8e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _BumpScale: 1
+    - _Cutoff: 0.5
+    - _DetailNormalMapScale: 1
+    - _DstBlend: 0
+    - _ForObject: 0
+    - _GlossMapScale: 1
+    - _Glossiness: 0.5
+    - _GlossyReflections: 1
+    - _Metallic: 0
+    - _Mode: 0
+    - _OcclusionStrength: 1
+    - _Parallax: 0.02
+    - _SmoothnessTextureChannel: 0
+    - _SpecularHighlights: 1
+    - _SrcBlend: 1
+    - _UVSec: 0
+    - _ZWrite: 1
+    - _alphaRate: 1
+    - _boost: 1.1
+    - _cloudy: 0.31
+    - _fbmScaleUnder: 0.43
+    - _moveRotation: 0
+    - _rimForce: 0.2
+    - _rimNarrow: 0.5
+    - _rotateY: 0
+    - _rotateZ: 90
+    - _scale: 90
+    - _scattering: 0
+    - _scatteringForce: 0.432
+    - _scatteringNarrow: 1
+    - _scatteringRange: 0.5
+    - _shapeSpeed: 0.1
+    - _skyEffectRate: 0.45
+    - _skyTransParent: 0
+    - _soft: 0.434
+    - _softDecayArea: 0.5
+    - _softDecayPower: 0.5
+    - _speed: 0.15
+    - _speedOffset: 0.8
+    - _speedSlide: 0
+    - _sunAroundPower: 2
+    - _sunAroundRange: 0.08
+    - _sunPower: 1.02
+    - _sunRange: 0.02
+    - _turbulence: 1
+    - _turbulenceForce: 4
+    - _turbulenceMove: 2
+    - _turbulenceScale: 1.8
+    - _underFade: 1
+    - _underFadeStart: -0.597
+    - _underFadeWidth: 0.266
+    - _yMirror: 0
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _scatteringColor: {r: 1, g: 1, b: 1, a: 1}
+    - _sunColor: {r: 1, g: 1, b: 1, a: 1}
