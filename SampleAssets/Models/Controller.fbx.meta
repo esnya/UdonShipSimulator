@@ -17,6 +17,10 @@ ModelImporter:
     100022: Throttle
     100024: RudderGuage
     100026: Fixed
+    100028: FrontPanel
+    100030: LeftPanel
+    100032: RightPanel
+    100034: TopPanel
     400000: Armature
     400002: Base
     400004: Button_Camera_Bridge
@@ -31,6 +35,10 @@ ModelImporter:
     400022: Throttle
     400024: RudderGuage
     400026: Fixed
+    400028: FrontPanel
+    400030: LeftPanel
+    400032: RightPanel
+    400034: TopPanel
     2100000: Mat_White
     2100002: Screen
     2100004: Mat_Red
@@ -40,6 +48,9 @@ ModelImporter:
     3300000: Fixed
     4300000: Controller
     4300002: Fixed
+    7400000: Monitor_On
+    7400002: Armature|Monitor_Off
+    7400004: Armature|Monitor_On
     9500000: //RootNode
     13700000: Controller
   externalObjects:

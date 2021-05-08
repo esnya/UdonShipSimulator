@@ -177,10 +177,12 @@ namespace UdonShipSimulator
 
         public void Respawn()
         {
+            Networking.SetOwner(Networking.LocalPlayer, gameObject);
             rigidbody.ResetInertiaTensor();
             transform.position = initialPosition;
             transform.rotation = initialRotation;
             dead = false;
+            OnOwnershipTransferred();
         }
 
         private bool dead;
@@ -192,6 +194,7 @@ namespace UdonShipSimulator
         public override void OnPickup()
         {
             dead = false;
+            OnOwnershipTransferred();
         }
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR

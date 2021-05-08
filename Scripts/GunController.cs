@@ -1,5 +1,6 @@
 ﻿
 using UdonSharp;
+using UdonToolkit;
 using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon;
@@ -7,18 +8,22 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(ParticleSystem)), RequireComponent(typeof(AudioSource))]
+    [RequireComponent(typeof(AudioSource))]
     public class GunController : UdonSharpBehaviour
     {
+        [ListView("Particles")] public ParticleSystem[] particles = {};
+        [ListView("Particles")] public int[] emissions = { 1 };
+
         [Tooltip("fire/min")] public float fireRate = 20.0f;
         [Tooltip("N")] public float reactionaryForce = 0.001f;
         public AudioClip fireSound;
         private GameObject root;
+        private int particleCount;
         private void Start()
         {
             var rigidbody = GetComponentInParent<Rigidbody>();
             if (rigidbody) root = rigidbody.gameObject;
-
+            particleCount = Mathf.Min(particles.Length, emissions.Length);
         }
 
         private bool ready = true;
@@ -29,8 +34,11 @@ namespace UdonShipSimulator
 
         public void PlayFireEffect()
         {
-            GetComponent<ParticleSystem>().Emit(1);
             if (fireSound != null) GetComponent<AudioSource>().PlayOneShot(fireSound);
+            for (int i = 0; i < particleCount; i++)
+            {
+                particles[i].Emit(emissions[i]);
+            }
         }
 
         private void SendHitMessage(GameObject obj)

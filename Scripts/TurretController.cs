@@ -16,6 +16,7 @@ namespace UdonShipSimulator
         public float azimuthMax = 170.0f, alturaMin = -15.0f, althuraMax = 65.0f, azimuthSpeed = 3.0f, althuraSpeed = 3.0f;
         public Transform azimuthHinge, althuraHinge;
         public GunController gun;
+        public AudioSource audioSource;
 
         private VRCPickup pickup;
         private Vector3 respawnPosition;
@@ -46,10 +47,15 @@ namespace UdonShipSimulator
             return nextAngle;
         }
 
+        private float prevAzimuth, prevAlthura;
         private void Update()
         {
             azimuthHinge.localRotation = Quaternion.AngleAxis(azimuth, azimuthAxis);
             althuraHinge.localRotation = Quaternion.AngleAxis(althura, althuraAxis);
+
+            if (audioSource != null) audioSource.enabled = prevAzimuth != azimuth || prevAlthura != althura;
+            prevAzimuth = azimuth;
+            prevAlthura = althura;
 
 #if !USS_DEBUG || !UNITY_EDITOR
             if (!pickup.IsHeld) return;
@@ -63,6 +69,26 @@ namespace UdonShipSimulator
             althura = ApplyAngle(althura, althuraHinge, althuraInput, althuraSpeed, alturaMin, althuraMax, althuraAxis);
 
             handlePivod.localRotation = Quaternion.AngleAxis(azimuthInput * handleMaxAngle, Vector3.forward) * Quaternion.AngleAxis(althuraInput * handleMaxAngle, Vector3.right);
+
+        }
+
+        private void ReplaceLayers(bool replace)
+        {
+            var root = gun.GetComponentInParent<Rigidbody>();
+            if (root == null) return;
+
+            foreach (var c in root.GetComponentsInChildren<Collider>())
+            {
+                var o = c.gameObject;
+                if (replace && o.layer == 17) o.layer = 13; // Walkthrough -> Pickup
+                if (!replace && o.layer == 13) o.layer = 17;
+            }
+
+        }
+
+        public override void OnPickup()
+        {
+            ReplaceLayers(true);
         }
 
         public override void OnPickupUseDown()
@@ -72,6 +98,7 @@ namespace UdonShipSimulator
 
         public override void OnDrop()
         {
+            ReplaceLayers(false);
             transform.position = handlePivod.TransformPoint(respawnPosition);
             transform.rotation = handlePivod.rotation;
         }
