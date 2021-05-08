@@ -19,9 +19,10 @@ namespace UdonShipSimulator
         public AudioClip fireSound;
         private GameObject root;
         private int particleCount;
+        private new Rigidbody rigidbody;
         private void Start()
         {
-            var rigidbody = GetComponentInParent<Rigidbody>();
+            rigidbody = GetComponentInParent<Rigidbody>();
             if (rigidbody) root = rigidbody.gameObject;
             particleCount = Mathf.Min(particles.Length, emissions.Length);
         }
@@ -60,7 +61,8 @@ namespace UdonShipSimulator
         {
             if (!ready) return;
             ready = false;
-            GetComponentInParent<Rigidbody>().AddForceAtPosition(-transform.forward * reactionaryForce, transform.position, ForceMode.Force);
+
+            if (rigidbody != null) rigidbody.AddForceAtPosition(-transform.forward * reactionaryForce, transform.position, ForceMode.Force);
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(PlayFireEffect));
             SendCustomEventDelayedSeconds(nameof(Ready), 60.0f / fireRate);
         }

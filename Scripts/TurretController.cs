@@ -13,7 +13,7 @@ namespace UdonShipSimulator
         public float handleDeadAngle = 5.0f;
 
         public Vector3 azimuthAxis = Vector3.up, althuraAxis = Vector3.right;
-        public float azimuthMax = 170.0f, alturaMin = -15.0f, althuraMax = 65.0f, azimuthSpeed = 3.0f, althuraSpeed = 3.0f;
+        public float azimuthMax = 170.0f, alturaMin = -15.0f, althuraMax = 65.0f, azimuthSpeed = 3.0f, althuraSpeed = 3.0f, curve = 4.0f;
         public Transform azimuthHinge, althuraHinge;
         public GunController gun;
         public AudioSource audioSource;
@@ -31,7 +31,8 @@ namespace UdonShipSimulator
         {
             if (Mathf.Abs(value) < handleDeadAngle) return 0.0f;
 
-            return Mathf.Clamp((value - Mathf.Sign(value) * handleDeadAngle) / (handleMaxAngle - handleDeadAngle), -1.0f, 1.0f);
+            var clamped = Mathf.Clamp((value - Mathf.Sign(value) * handleDeadAngle) / (handleMaxAngle - handleDeadAngle), -1.0f, 1.0f);
+            return Mathf.Pow(Mathf.Abs(clamped), curve) * Mathf.Sign(clamped);
         }
 
         private float GetInput(Vector3 relativePosition, Vector3 localAxis)

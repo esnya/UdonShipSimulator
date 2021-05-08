@@ -46,8 +46,7 @@ namespace UdonShipSimulator
             volume = extents.x * 2 * extents.y * 2 * extents.z * 2;
 
             OnOwnershipTransferred();
-
-            dead = false;
+            SetDead(false);
         }
 
         private Vector3 GetWorldCenterOfBuoyancy(float draft)
@@ -181,19 +180,33 @@ namespace UdonShipSimulator
             rigidbody.ResetInertiaTensor();
             transform.position = initialPosition;
             transform.rotation = initialRotation;
-            dead = false;
+            SetDead(false);
             OnOwnershipTransferred();
         }
 
+        public GameObject deadEffect;
+        private GameObject spawnedDeadEffect;
         private bool dead;
+        public void SetDead(bool value)
+        {
+            dead = value;
+            if (Utilities.IsValid(spawnedDeadEffect)) Destroy(spawnedDeadEffect);
+            if (dead && deadEffect)
+            {
+                spawnedDeadEffect = VRCInstantiate(deadEffect);
+                spawnedDeadEffect.transform.parent = transform;
+                spawnedDeadEffect.transform.localPosition = Vector3.zero;
+            }
+        }
+
         public void BulletHit()
         {
-            dead = true;
+            SetDead(true);
         }
 
         public override void OnPickup()
         {
-            dead = false;
+            SetDead(false);
             OnOwnershipTransferred();
         }
 
