@@ -1,11 +1,11 @@
 ﻿
+using TMPro;
 using UdonSharp;
 using UdonToolkit;
 using UnityEngine;
-using VRC.SDKBase;
-using TMPro;
-using VRC.Udon.Common.Interfaces;
 using VRC.SDK3.Components;
+using VRC.SDKBase;
+using VRC.Udon.Common.Interfaces;
 
 namespace UdonShipSimulator
 {
@@ -19,7 +19,7 @@ namespace UdonShipSimulator
         public Transform rudder;
         public float rudderCoefficient = 0.001f;
         public float rudderBackwardCoefficient = 0.0001f;
-        [ListView("Thrusters/Screws")] public Transform[] thrusters = {};
+        [ListView("Thrusters/Screws")] public Transform[] thrusters = { };
         [ListView("Thrusters/Screws")] public float[] thrustForces = { 0.0005f };
         [HideInInspector] public float[] thrustPowers;
         public Vector3 extents;
@@ -173,9 +173,9 @@ namespace UdonShipSimulator
             for (int i = 0; i < thrusterCount; i++) thrustPowers[i] = Mathf.Clamp(power, -1.0f, 1.0f);
         }
 
-        private bool GetIsHeld()
+        private bool GetIsHeld(GameObject obj)
         {
-            var pickup = (VRCPickup)GetComponent(typeof(VRCPickup));
+            var pickup = (VRCPickup)obj.GetComponent(typeof(VRCPickup));
             if (pickup == null) return false;
             return pickup.IsHeld;
         }
@@ -202,8 +202,15 @@ namespace UdonShipSimulator
 
         #region Damage
         [SectionHeader("Damage")]
-
         public GameObject deadEffect;
+        [Range(0, 1.0f)] public float capsizingThreshold = 0.9f;
+        private void Update()
+        {
+            if (!Networking.IsOwner(gameObject)) return;
+
+            if (Vector3.Dot(transform.up, Vector3.down) > capsizingThreshold) Capsized();
+        }
+
         private GameObject spawnedDeadEffect;
         private bool dead;
         public void ResetDead()
@@ -223,9 +230,13 @@ namespace UdonShipSimulator
             }
         }
 
+        private void Capsized()
+        {
+            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
+        }
+
         public void BulletHit()
         {
-            if (!Networking.IsOwner(gameObject) || GetIsHeld() || dead) return;
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
         }
         #endregion
@@ -233,8 +244,9 @@ namespace UdonShipSimulator
         #region Collision Damage
         [SectionHeader("Collision Damage")]
         public float collisionDamage = 1.0f;
-        private void  OnCollisionEnter(Collision collision) {
-            if (collision == null || !Networking.IsOwner(gameObject) || GetIsHeld() || dead) return;
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (collision == null || !Networking.IsOwner(gameObject) || GetIsHeld(gameObject) || GetIsHeld(collision.gameObject) || dead) return;
             if (Random.Range(0, collision.relativeVelocity.sqrMagnitude * collisionDamage) >= 1.0f) SendCustomNetworkEvent(NetworkEventTarget.All, nameof(CollisionDamaged));
         }
 
