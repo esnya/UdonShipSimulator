@@ -2,7 +2,6 @@
 using UdonSharp;
 using UdonToolkit;
 using UnityEngine;
-using VRC.SDKBase;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 

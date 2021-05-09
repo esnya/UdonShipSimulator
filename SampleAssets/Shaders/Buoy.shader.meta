@@ -1,0 +1,11 @@
+fileFormatVersion: 2
+guid: d80f2e30e9aa10d4fb15066b02d8d158
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _Wave: {fileID: 2800000, guid: d73936c8c956d1f42a6d4ee47680d3f3, type: 3}
+  - _Wave2: {fileID: 2800000, guid: b27033af63cbd7c4f9586ae88ec0e764, type: 3}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

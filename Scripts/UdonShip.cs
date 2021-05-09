@@ -1,15 +1,15 @@
 ﻿
 using UdonSharp;
 using UdonToolkit;
-using UnityEditor;
 using UnityEngine;
 using VRC.SDKBase;
-using VRC.Udon;
 using TMPro;
+using VRC.Udon.Common.Interfaces;
+using VRC.SDK3.Components;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(AudioSource))]
     public class UdonShip : UdonSharpBehaviour
     {
         public float waterDensity = 0.99997495f, waterViscosity = 0.000890f;
@@ -17,7 +17,7 @@ namespace UdonShipSimulator
         public float waveDrag = 0.5f, frictionDrag = 0.5f;
         Vector3 dragCoefficient = new Vector3(2.0f, 1.5f, 0.5f);
         public Transform rudder;
-        public float rudderCoefficient = 0.0002f;
+        public float rudderCoefficient = 0.001f;
         public float rudderBackwardCoefficient = 0.0001f;
         [ListView("Thrusters/Screws")] public Transform[] thrusters = {};
         [ListView("Thrusters/Screws")] public float[] thrustForces = { 0.0005f };
@@ -46,7 +46,6 @@ namespace UdonShipSimulator
             volume = extents.x * 2 * extents.y * 2 * extents.z * 2;
 
             OnOwnershipTransferred();
-            SetDead(false);
         }
 
         private Vector3 GetWorldCenterOfBuoyancy(float draft)
@@ -174,41 +173,75 @@ namespace UdonShipSimulator
             for (int i = 0; i < thrusterCount; i++) thrustPowers[i] = Mathf.Clamp(power, -1.0f, 1.0f);
         }
 
+        private bool GetIsHeld()
+        {
+            var pickup = (VRCPickup)GetComponent(typeof(VRCPickup));
+            if (pickup == null) return false;
+            return pickup.IsHeld;
+        }
+
         public void Respawn()
         {
             Networking.SetOwner(Networking.LocalPlayer, gameObject);
             rigidbody.ResetInertiaTensor();
             transform.position = initialPosition;
             transform.rotation = initialRotation;
-            SetDead(false);
+            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(ResetDead));
             OnOwnershipTransferred();
         }
+
+        public override void OnPickup()
+        {
+            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(ResetDead));
+            OnOwnershipTransferred();
+        }
+
+        #region Damage
+        [SectionHeader("Damage")]
 
         public GameObject deadEffect;
         private GameObject spawnedDeadEffect;
         private bool dead;
-        public void SetDead(bool value)
+        public void ResetDead()
         {
-            dead = value;
+            dead = false;
             if (Utilities.IsValid(spawnedDeadEffect)) Destroy(spawnedDeadEffect);
-            if (dead && deadEffect)
+        }
+
+        public void Dead()
+        {
+            dead = true;
+            if (!Utilities.IsValid(spawnedDeadEffect) && deadEffect != null)
             {
                 spawnedDeadEffect = VRCInstantiate(deadEffect);
                 spawnedDeadEffect.transform.parent = transform;
                 spawnedDeadEffect.transform.localPosition = Vector3.zero;
+
             }
         }
 
         public void BulletHit()
         {
-            SetDead(true);
+            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
+        }
+        #endregion
+
+        #region Collision Damage
+        [SectionHeader("Collision Damage")]
+        public float collisionDamage = 1.0f;
+        private void  OnCollisionEnter(Collision collision) {
+            if (collision == null || !Networking.IsOwner(gameObject) && GetIsHeld()) return;
+            if (Random.Range(0, collision.relativeVelocity.sqrMagnitude * collisionDamage) >= 1.0f) SendCustomNetworkEvent(NetworkEventTarget.All, nameof(CollisionDamaged));
         }
 
-        public override void OnPickup()
+        public AudioClip collisionSound;
+        public void CollisionDamaged()
         {
-            SetDead(false);
-            OnOwnershipTransferred();
+            if (collisionSound != null) GetComponent<AudioSource>().PlayOneShot(collisionSound);
+            Dead();
         }
+
+        #endregion
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
 /*
