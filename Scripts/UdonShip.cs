@@ -179,7 +179,6 @@ namespace UdonShipSimulator
             if (pickup == null) return false;
             return pickup.IsHeld;
         }
-
         public void Respawn()
         {
             Networking.SetOwner(Networking.LocalPlayer, gameObject);
@@ -194,6 +193,11 @@ namespace UdonShipSimulator
         {
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(ResetDead));
             OnOwnershipTransferred();
+        }
+
+        public override void OnDrop()
+        {
+            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(ResetDead));
         }
 
         #region Damage
@@ -216,12 +220,12 @@ namespace UdonShipSimulator
                 spawnedDeadEffect = VRCInstantiate(deadEffect);
                 spawnedDeadEffect.transform.parent = transform;
                 spawnedDeadEffect.transform.localPosition = Vector3.zero;
-
             }
         }
 
         public void BulletHit()
         {
+            if (!Networking.IsOwner(gameObject) || GetIsHeld() || dead) return;
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
         }
         #endregion
@@ -230,7 +234,7 @@ namespace UdonShipSimulator
         [SectionHeader("Collision Damage")]
         public float collisionDamage = 1.0f;
         private void  OnCollisionEnter(Collision collision) {
-            if (collision == null || !Networking.IsOwner(gameObject) && GetIsHeld()) return;
+            if (collision == null || !Networking.IsOwner(gameObject) || GetIsHeld() || dead) return;
             if (Random.Range(0, collision.relativeVelocity.sqrMagnitude * collisionDamage) >= 1.0f) SendCustomNetworkEvent(NetworkEventTarget.All, nameof(CollisionDamaged));
         }
 
@@ -240,36 +244,6 @@ namespace UdonShipSimulator
             if (collisionSound != null) GetComponent<AudioSource>().PlayOneShot(collisionSound);
             Dead();
         }
-
         #endregion
-
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-/*
-        private void OnDrawGizmos()
-        {
-            Gizmos.color = Color.white;
-            Gizmos.matrix = transform.localToWorldMatrix;
-            Gizmos.DrawWireCube(Vector3.zero, extents * 2);
-            Gizmos.matrix = Matrix4x4.identity;
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            Start();
-
-            var buoyancy = Vector3.up * GetBuoyancy(GetUnderWaterVolume(GetDraft()));
-            var gravityForce = rigidbody.mass * Physics.gravity;
-
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(GetWorldCenterOfBuoyancy(GetDraft()), 0.001f);
-            Gizmos.DrawRay(GetWorldCenterOfBuoyancy(GetDraft()), buoyancy);
-            Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(rigidbody.worldCenterOfMass, 0.001f);
-            Gizmos.DrawRay(rigidbody.worldCenterOfMass, gravityForce);
-            Gizmos.color = Color.green;
-            Gizmos.DrawRay(transform.position, buoyancy + gravityForce);
-        }
-        */
-#endif
     }
 }
