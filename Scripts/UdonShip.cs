@@ -1,4 +1,5 @@
 ﻿
+using Mono.Cecil.Cil;
 using TMPro;
 using UdonSharp;
 using UdonToolkit;
@@ -11,9 +12,7 @@ namespace UdonShipSimulator
 {
     [RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(AudioSource))]
     public class UdonShip : UdonSharpBehaviour
-    {
-        public float waterDensity = 0.99997495f, waterViscosity = 0.000890f;
-        public Transform centerOfMass;
+    {        public Transform centerOfMass;
         public float waveDrag = 0.5f, frictionDrag = 0.5f;
         Vector3 dragCoefficient = new Vector3(2.0f, 1.5f, 0.5f);
         public Transform rudder;
@@ -25,12 +24,10 @@ namespace UdonShipSimulator
         public Vector3 extents;
         public TextMeshPro ownerText;
 
-        private float volume;
         private new Rigidbody rigidbody;
         private int thrusterCount;
         private Vector3 initialPosition;
         private Quaternion initialRotation;
-
         private void Start()
         {
             initialPosition = transform.position;
@@ -43,113 +40,29 @@ namespace UdonShipSimulator
             thrusterCount = Mathf.Min(thrusters.Length, thrustForces.Length);
             thrustPowers = new float[thrusterCount];
 
-            volume = extents.x * 2 * extents.y * 2 * extents.z * 2;
+            UpdateParameters();
 
             OnOwnershipTransferred();
         }
 
-        private Vector3 GetWorldCenterOfBuoyancy(float draft)
-        {
-            return Vector3.Scale(Vector3.Scale(transform.up, Vector3.down), extents / extents.y) * draft * 0.5f;
-        }
-
-        private float GetDraft()
-        {
-            var bottomHeight = transform.position.y - extents.y;
-            var seaHeight = 0.0f; // waterSurface.position.y;
-            return Mathf.Clamp(seaHeight - bottomHeight, 0, extents.y * 2);
-        }
-
-        private float GetUnderWaterVolume(float draft)
-        {
-            return volume * draft / (extents.y * 2);
-        }
-
-        private float GetBuoyancy(float volume)
-        {
-            return -waterDensity * volume * Physics.gravity.y;
-        }
-
-        private Vector3 GetDragForce(float draft, Vector3 velocity)
-        {
-            var localVelocity = transform.InverseTransformVector(velocity);
-            var sqrLocalVelocity = Vector3.Scale(localVelocity, localVelocity);
-
-            var bottomArea = extents.x * 2 * extents.z * 2;
-            var leftArea = extents.z * 2 * draft;
-            var frontArea = extents.x * 2 * draft;
-            var surfaceArea = bottomArea + (leftArea + frontArea) * 2.0f;
-
-            var cf = frictionDrag * Vector3.Scale(localVelocity, new Vector3(frontArea * 2 + bottomArea, (frontArea + leftArea) * 2, leftArea * 2 + bottomArea));
-            var cw = waveDrag * waterDensity * surfaceArea * sqrLocalVelocity * 0.5f;
-
-            return -transform.TransformVector(cf + cw);
-        }
-
-        private void ApplySectionForce(Vector3 section, float volume, Vector3 gravity, float gravityMagnitude, Vector3 localVelocity, Vector3 sqrLocalVelocity)
-        {
-            var center = transform.TransformPoint(Vector3.Scale(section, extents) * 0.5f);
-
-            var draft = Mathf.Clamp(-center.y, 0, extents.y * 2.0f);
-            var underWaterVolume = volume * draft / extents.y * 2.0f;
-            var bouyancy = -waterDensity * underWaterVolume * gravity;
-
-            var size = Vector3.Scale(extents * 2.0f, new Vector3(0.5f, 1.0f, 0.25f));
-            var sideArea = size.y * size.z * (section.x == Mathf.Sign(localVelocity.x) ? 1.0f : 0.0f);
-            var bottomArea = size.x * size.z;
-            var frontArea = size.x * size.y * (section.z == 0.0f || section.z == 1.0f ? 1.0f : 0.0f);
-            var surfaceArea = sideArea + bottomArea + frontArea;
-            var localFrictionForce = transform.TransformVector(-frictionDrag * surfaceArea * localVelocity * gravityMagnitude);
-
-            var localWaveForce = -waveDrag * waterDensity * surfaceArea * sqrLocalVelocity * 0.5f;
-
-            var localResistanceForce = -0.5f * waterDensity * Vector3.Scale(Vector3.Scale(sqrLocalVelocity, new Vector3(sideArea, bottomArea, frontArea)), dragCoefficient);
-
-            rigidbody.AddForceAtPosition(bouyancy + transform.TransformVector(localFrictionForce + localWaveForce + localResistanceForce), center, ForceMode.Force);
-        }
-
-        float flood = 0.0f;
         private void FixedUpdate()
         {
             if (!Networking.IsOwner(gameObject)) return;
 
             flood = dead ? Mathf.Clamp01(flood + Time.fixedDeltaTime * 0.1f) : 0.0f;
-
-            var p0 = transform.position - transform.up * extents.y;
-
-            var p1 = p0 + transform.right * extents.x * 0.5f;
-            var p2 = p0 - transform.right * extents.x * 0.5f;
-            var p3 = p0 + transform.forward * extents.z * 0.5f;
-            var p4 = p0 - transform.forward * extents.z * 0.5f;
-
-            var y0 = 0; // waterSurface.position.y;
             var velocity = rigidbody.velocity;
 
-            var d1 = Mathf.Clamp(y0 - p1.y, 0, extents.y * 2.0f);
-            var d2 = Mathf.Clamp(y0 - p2.y, 0, extents.y * 2.0f);
-            var d3 = Mathf.Clamp(y0 - p3.y, 0, extents.y * 2.0f);
-            var d4 = Mathf.Clamp(y0 - p4.y, 0, extents.y * 2.0f);
-
-            var v1 = volume * 0.25f * d1 / extents.y;
-            var v2 = volume * 0.25f * d2 / extents.y;
-            var v3 = volume * 0.25f * d3 / extents.y;
-            var v4 = volume * 0.25f * d4 / extents.y;
-
-            var b1 = v1 * waterDensity * (1.0f - flood * flood);
-            var b2 = v2 * waterDensity * (1.0f - flood * flood);
-            var b3 = v3 * waterDensity * (1.0f - flood);
-            var b4 = v4 * waterDensity * (1.0f - flood);
-
-            //rigidbody.AddForce(Vector3.up * GetBuoyancy(GetUnderWaterVolume(draft)), ForceMode.Force);
-            rigidbody.AddForceAtPosition(Vector3.up * b1, p1 + transform.up * d1 * 0.5f, ForceMode.Force);
-            rigidbody.AddForceAtPosition(Vector3.up * b2, p2 + transform.up * d1 * 0.5f, ForceMode.Force);
-            rigidbody.AddForceAtPosition(Vector3.up * b3, p3 + transform.up * d1 * 0.5f, ForceMode.Force);
-            rigidbody.AddForceAtPosition(Vector3.up * b4, p4 + transform.up * d1 * 0.5f, ForceMode.Force);
+            for (int i = 0; i < compartmentCount; i++) {
+                var p = GetCompartmentPosition(compartments[i]);
+                var d = GetCompartmenDepth(p);
+                var force = Vector3.up * GetCompartmentBuoyancy(d, Mathf.Pow(flood, i + 1));
+                rigidbody.AddForceAtPosition(force, GetCompartmentBuoyancyCenter(p, d), ForceMode.Force);
+            }
 
             for (int i = 0; i < thrusterCount; i++)
             {
                 var thruster = thrusters[i];
-                if (thruster.position.y >= y0) continue;
+                if (thruster.position.y >= 0) continue;
 
                 var power = thrustForces[i] * thrustPowers[i];
                 rigidbody.AddForceAtPosition(thruster.forward * power, thruster.position, ForceMode.Force);
@@ -200,6 +113,58 @@ namespace UdonShipSimulator
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(ResetDead));
         }
 
+        #region Physics
+        [SectionHeader("Water Phisics")]
+        public float waterDensity = 0.99997495f;
+        public float waterViscosity = 0.000890f;
+
+        public Vector3[] compartments = {
+            Vector3.right,
+            Vector3.left,
+            Vector3.forward,
+            Vector3.back,
+        };
+
+        [HelpBox("Proportional to pow(V, 1). aka. Viscous resistance")] public Vector3 frictionDragScale = Vector3.one;
+        [HelpBox("Proportional to pow(V, 2). aka. Inertial resistance")] public Vector3 pressureDragScale = Vector3.one;
+        [HelpBox("Proportional to pow(V, 3). aka. Inertial resistance")] public Vector3 waveDragScale = Vector3.one;
+
+
+        private float volume, compartmentCount, compartmentVolume;
+        private Vector3 size;
+        public void UpdateParameters()
+        {
+            size = extents * 2.0f;
+            volume = size.x * size.y * size.z;
+
+            compartmentCount = compartments.Length;
+            compartmentVolume = volume / compartmentCount;
+        }
+
+        float flood = 0.0f;
+        private Vector3 GetCompartmentPosition(Vector3 compartment)
+        {
+            return transform.TransformPoint(Vector3.Scale(compartment, extents));
+        }
+
+        private float GetCompartmenDepth(Vector3 position)
+        {
+            return Mathf.Clamp(extents.y - position.y , 0, size.y);
+        }
+
+        private float GetCompartmentBuoyancy(float depth, float flood)
+        {
+            var underWaterVolume = compartmentVolume * depth / size.y;
+            return underWaterVolume * waterDensity * (1.0f - flood);
+        }
+
+        private Vector3 GetCompartmentBuoyancyCenter(Vector3 compartmentPosition, float depth)
+        {
+            return compartmentPosition + Vector3.down * Mathf.Max(extents.y - depth * 0.5f, 0.0f);
+        }
+
+        #endregion
+
         #region Damage
         [SectionHeader("Damage")]
         public GameObject deadEffect;
@@ -237,7 +202,7 @@ namespace UdonShipSimulator
 
         public void BulletHit()
         {
-            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
+            if (Random.value <= 0.5f) SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
         }
         #endregion
 
@@ -247,7 +212,10 @@ namespace UdonShipSimulator
         private void OnCollisionEnter(Collision collision)
         {
             if (collision == null || !Networking.IsOwner(gameObject) || GetIsHeld(gameObject) || GetIsHeld(collision.gameObject) || dead) return;
-            if (Random.Range(0, collision.relativeVelocity.sqrMagnitude * collisionDamage) >= 1.0f) SendCustomNetworkEvent(NetworkEventTarget.All, nameof(CollisionDamaged));
+            if (Random.Range(0, collision.relativeVelocity.sqrMagnitude * collisionDamage) >= 1.0f)
+            {
+                SendCustomNetworkEvent(NetworkEventTarget.All, nameof(CollisionDamaged));
+            }
         }
 
         public AudioClip collisionSound;
@@ -257,5 +225,37 @@ namespace UdonShipSimulator
             Dead();
         }
         #endregion
+
+#if !COMPILER_UDONSHARP && UNITY_EDITOR
+        private void DrawGravityGizmo(Vector3 p, float d, float scale)
+        {
+            Gizmos.DrawRay(GetCompartmentBuoyancyCenter(p, d), Physics.gravity * GetComponent<Rigidbody>().mass * scale);
+        }
+        private void DrawBuoyancyGizmo(Vector3 p, float d, float buoyancy, float scale)
+        {
+            Gizmos.DrawRay(GetCompartmentBuoyancyCenter(p, d), Vector3.up * buoyancy * scale);
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            var scale = 10.0f;
+
+            for (int i = 0; i < compartmentCount; i++) {
+                var p = GetCompartmentPosition(compartments[i]);
+                var d = GetCompartmenDepth(p);
+                var b = GetCompartmentBuoyancy(d, Mathf.Pow(flood, i + 1));
+
+                Gizmos.color = Color.red;
+                DrawGravityGizmo(p, d, scale * 0.25f);
+                Gizmos.color = Color.green;
+                DrawBuoyancyGizmo(p, d, b, scale);
+            }
+
+            Gizmos.color = Color.white;
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(Vector3.zero, extents * 2.0f);
+            Gizmos.matrix = Matrix4x4.identity;
+        }
+#endif
     }
 }
