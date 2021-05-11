@@ -1,9 +1,8 @@
-﻿
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 using VRC.SDK3.Components;
 using VRC.SDKBase;
+using VRC.Udon.Common;
 
 namespace UdonShipSimulator
 {
@@ -20,33 +19,50 @@ namespace UdonShipSimulator
 
         public int thrusterIndex = 0;
         public UdonShip ship;
+        public bool debug;
 
         private VRCPickup pickup;
         private Vector3 respawnPosition;
+        [UdonSynced(UdonSyncMode.Smooth)] private float angle = 0.0f;
         private void Start()
         {
             pickup = (VRCPickup)GetComponent(typeof(VRCPickup));
             respawnPosition = hinge.InverseTransformPoint(transform.position);
         }
 
+        private float prevAngle;
         private void Update()
         {
-#if !USS_DEBUG || !UNITY_EDITOR
-            if (!pickup.IsHeld) return;
-#endif
-
-            var worldAxis = hinge.TransformDirection(hingeAxis);
-            var worldUp = hinge.parent.TransformDirection(hingeUp);
-            var position = Vector3.ProjectOnPlane(transform.position - hinge.position, worldAxis);
-            var angle = Mathf.Clamp(Vector3.SignedAngle(worldUp, position, worldAxis), -maxAngle, maxAngle);
-            var absAngle = Mathf.Abs(angle);
-            var angleSign = Mathf.Sign(angle);
-
-            foreach (var snapAngle in snapAngles)
+            if (pickup.IsHeld || debug)
             {
-                if (Mathf.Abs(absAngle - snapAngle) <= snapDistance) angle = snapAngle * angleSign;
+                var worldAxis = hinge.TransformDirection(hingeAxis);
+                var worldUp = hinge.parent.TransformDirection(hingeUp);
+                var position = Vector3.ProjectOnPlane(transform.position - hinge.position, worldAxis);
+
+                angle = Vector3.SignedAngle(worldUp, position, worldAxis);
+
+                angle = Mathf.Clamp(angle, -maxAngle, maxAngle);
+                var absAngle = Mathf.Abs(angle);
+                var angleSign = Mathf.Sign(angle);
+
+                foreach (var snapAngle in snapAngles)
+                {
+                    if (Mathf.Abs(absAngle - snapAngle) <= snapDistance) angle = snapAngle * angleSign;
+                }
             }
 
+            if (angle != prevAngle) Apply();
+            prevAngle = angle;
+        }
+
+        public override void OnDrop()
+        {
+            transform.position = hinge.TransformPoint(respawnPosition);
+            transform.rotation = hinge.rotation;
+        }
+
+        private void Apply()
+        {
             hinge.localRotation = Quaternion.Euler(angle, 0, 0);
             var power = Mathf.Clamp(angle / maxAngle, -1, 1);
             if (inverse) power *= -1;
@@ -54,12 +70,6 @@ namespace UdonShipSimulator
             {
                 ship.SetThrustPower(power);
             }
-        }
-
-        public override void OnDrop()
-        {
-            transform.position = hinge.TransformPoint(respawnPosition);
-            transform.rotation = hinge.rotation;
         }
     }
 }

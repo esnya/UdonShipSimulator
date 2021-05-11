@@ -70,7 +70,7 @@ namespace UdonShipSimulator
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         [Button("Apply Now", true)]
-        public void ApplyNow()
+        public void _ApplyNow()
         {
             this.UpdateProxy();
             Start();
@@ -78,16 +78,16 @@ namespace UdonShipSimulator
         }
 
         [Button("Apply All Of Scene", true)]
-        public void ApplyAllOfScene()
+        public void _ApplyAllOfScene()
         {
             foreach (var udon in SceneManager.GetActiveScene().GetRootGameObjects().SelectMany(o => o.GetUdonSharpComponentsInChildren<MaterialPropertyBlockWriter>()))
             {
-                udon.ApplyNow();
+                udon._ApplyNow();
             }
         }
 
         [Button("Set Renderer To This", true)]
-        public void SetRendererToThis()
+        public void _SetRendererToThis()
         {
             this.UpdateProxy();
             for (int i = 0; i < colorTargets.Length; i++) colorTargets[i] = GetComponent<Renderer>();
@@ -96,7 +96,7 @@ namespace UdonShipSimulator
         }
 
         [Button("Fill Color With First", true)]
-        public void FillColorWithFirst()
+        public void _FillColorWithFirst()
         {
             this.UpdateProxy();
             for (int i = 1; i < colorValues.Length; i++)

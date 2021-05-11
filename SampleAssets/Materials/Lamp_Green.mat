@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Flash_Red
+  m_Name: Lamp_Green
   m_Shader: {fileID: 4800000, guid: fbe1592682ce52d4bb46d3adf9cbcb09, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 0
@@ -60,8 +60,8 @@ Material:
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Dt: 0.065
-    - _Duration: 1
+    - _Dt: 1
+    - _Duration: 0.2
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
@@ -76,5 +76,5 @@ Material:
     - _ZWrite: 1
     - __dirty: 0
     m_Colors:
-    - _Color: {r: 0.49056602, g: 0.0485938, b: 0.0485938, a: 1}
-    - _EmissionColor: {r: 766.9961, g: 0, b: 0, a: 1}
+    - _Color: {r: 0, g: 0, b: 0, a: 1}
+    - _EmissionColor: {r: 0, g: 47.937256, b: 0, a: 1}

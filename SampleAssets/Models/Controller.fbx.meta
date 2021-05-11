@@ -21,6 +21,19 @@ ModelImporter:
     100030: LeftPanel
     100032: RightPanel
     100034: TopPanel
+    100036: Button_Camera_Bridge_end
+    100038: Button_Camera_Gun_end
+    100040: Button_Camera_Off_end
+    100042: Button_Respawn_end
+    100044: Gun_end
+    100046: GunAngle
+    100048: GunAngle_end
+    100050: Helm_end
+    100052: Monitor_end
+    100054: RudderGuage_end
+    100056: ShipAngle
+    100058: ShipAngle_end
+    100060: Throttle_end
     400000: Armature
     400002: Base
     400004: Button_Camera_Bridge
@@ -39,11 +52,25 @@ ModelImporter:
     400030: LeftPanel
     400032: RightPanel
     400034: TopPanel
+    400036: Button_Camera_Bridge_end
+    400038: Button_Camera_Gun_end
+    400040: Button_Camera_Off_end
+    400042: Button_Respawn_end
+    400044: Gun_end
+    400046: GunAngle
+    400048: GunAngle_end
+    400050: Helm_end
+    400052: Monitor_end
+    400054: RudderGuage_end
+    400056: ShipAngle
+    400058: ShipAngle_end
+    400060: Throttle_end
     2100000: Mat_White
     2100002: Screen
     2100004: Mat_Red
     2100006: Mat_Green
     2100008: Mat_Black
+    2100010: Lamp_Greeen
     2300000: Fixed
     3300000: Fixed
     4300000: Controller
@@ -54,6 +81,11 @@ ModelImporter:
     9500000: //RootNode
     13700000: Controller
   externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Lamp_Greeen
+    second: {fileID: 2100000, guid: 1d7e5ab5745f7d44f85c94d1b04c3069, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule

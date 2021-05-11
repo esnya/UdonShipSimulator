@@ -10,6 +10,7 @@ ModelImporter:
     100008: MissileLid
     100010: MissileMount
     100012: MissleBase
+    100014: Angle
     400000: //RootNode
     400002: Joint
     400004: Missile
@@ -17,6 +18,7 @@ ModelImporter:
     400008: MissileLid
     400010: MissileMount
     400012: MissleBase
+    400014: Angle
     2100000: Material.001
     2300000: Joint
     2300002: Missile
@@ -82,15 +84,15 @@ ModelImporter:
     importCameras: 0
     importLights: 0
     swapUVChannels: 0
-    generateSecondaryUV: 1
+    generateSecondaryUV: 0
     useFileUnits: 1
     optimizeMeshForGPU: 1
     keepQuads: 0
     weldVertices: 1
     preserveHierarchy: 0
     indexFormat: 0
-    secondaryUVAngleDistortion: 8
-    secondaryUVAreaDistortion: 15.000001
+    secondaryUVAngleDistortion: 75
+    secondaryUVAreaDistortion: 75
     secondaryUVHardAngle: 88
     secondaryUVPackMargin: 4
     useFileScale: 1

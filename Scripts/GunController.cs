@@ -63,7 +63,12 @@ namespace UdonShipSimulator
 
             if (rigidbody != null) rigidbody.AddForceAtPosition(-transform.forward * reactionaryForce, transform.position, ForceMode.Force);
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(PlayFireEffect));
-            SendCustomEventDelayedSeconds(nameof(Ready), 60.0f / fireRate);
+            SendCustomEventDelayedSeconds(nameof(Ready), GetIntervalSeconds());
+        }
+
+        public float GetIntervalSeconds()
+        {
+            return 60.0f / fireRate;
         }
     }
 }

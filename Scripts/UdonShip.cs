@@ -1,5 +1,4 @@
 ﻿
-using Mono.Cecil.Cil;
 using TMPro;
 using UdonSharp;
 using UdonToolkit;
@@ -12,14 +11,13 @@ namespace UdonShipSimulator
 {
     [RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(AudioSource))]
     public class UdonShip : UdonSharpBehaviour
-    {        public Transform centerOfMass;
-        public float waveDrag = 0.5f, frictionDrag = 0.5f;
-        Vector3 dragCoefficient = new Vector3(2.0f, 1.5f, 0.5f);
+    {
+                public Transform centerOfMass;
         public Transform rudder;
-        public float rudderCoefficient = 0.001f;
-        public float rudderBackwardCoefficient = 0.0001f;
+        public float rudderCoefficient = 0.0001f;
+        public float rudderBackwardCoefficient = 0.00005f;
         [ListView("Thrusters/Screws")] public Transform[] thrusters = { };
-        [ListView("Thrusters/Screws")] public float[] thrustForces = { 0.0005f };
+        [ListView("Thrusters/Screws")] public float[] thrustForces = { 0.0001f };
         [HideInInspector] public float[] thrustPowers;
         public Vector3 extents;
         public TextMeshPro ownerText;
@@ -47,33 +45,39 @@ namespace UdonShipSimulator
 
         private void FixedUpdate()
         {
-            if (!Networking.IsOwner(gameObject)) return;
+            if (!Networking.IsOwner(gameObject) || rigidbody.IsSleeping()) return;
 
-            flood = dead ? Mathf.Clamp01(flood + Time.fixedDeltaTime * 0.1f) : 0.0f;
             var velocity = rigidbody.velocity;
+            var angularVelocity = rigidbody.angularVelocity;
+            var position = transform.position;
 
             for (int i = 0; i < compartmentCount; i++) {
+                if (dead) flood[i] = Mathf.Clamp01(flood[i] + Time.fixedDeltaTime * Random.Range(0.1f, 0.2f));
+                else flood[i] = 0;
+
                 var p = GetCompartmentPosition(compartments[i]);
                 var d = GetCompartmenDepth(p);
-                var force = Vector3.up * GetCompartmentBuoyancy(d, Mathf.Pow(flood, i + 1));
+                var v = GetCompartmentVelocity(velocity, angularVelocity, position, p);
+                var force = Vector3.up * GetCompartmentBuoyancy(d, flood[i]) + GetCompartmentDrag(v, d);
                 rigidbody.AddForceAtPosition(force, GetCompartmentBuoyancyCenter(p, d), ForceMode.Force);
             }
 
-            for (int i = 0; i < thrusterCount; i++)
+            if (!dead)
             {
-                var thruster = thrusters[i];
-                if (thruster.position.y >= 0) continue;
+                for (int i = 0; i < thrusterCount; i++)
+                {
+                    var thruster = thrusters[i];
+                    if (thruster.position.y >= 0) continue;
 
-                var power = thrustForces[i] * thrustPowers[i];
-                rigidbody.AddForceAtPosition(thruster.forward * power, thruster.position, ForceMode.Force);
+                    var power = thrustForces[i] * thrustPowers[i];
+                    rigidbody.AddForceAtPosition(thruster.forward * power, thruster.position, ForceMode.Force);
+                }
             }
 
-            var localVelocity = transform.InverseTransformVector(rigidbody.velocity);
+            var localVelocity = transform.InverseTransformVector(velocity);
             var cl = Vector3.Dot(velocity.normalized, rudder.right);
             var l = -0.5f * waterDensity * rigidbody.velocity.sqrMagnitude * (localVelocity.z >= 0 ? rudderCoefficient : rudderBackwardCoefficient) * cl;
             rigidbody.AddForceAtPosition(rudder.right * l, rudder.position, ForceMode.Force);
-
-            //rigidbody.AddForce(GetDragForce(Mathf.Clamp(y0 - p0.y, 0, extents.y * 2.0f), velocity));
         }
 
         public override void OnOwnershipTransferred()
@@ -119,19 +123,21 @@ namespace UdonShipSimulator
         public float waterViscosity = 0.000890f;
 
         public Vector3[] compartments = {
-            Vector3.right,
-            Vector3.left,
-            Vector3.forward,
-            Vector3.back,
+            Vector3.zero,
+            Vector3.right * 0.75f,
+            Vector3.left * 0.75f,
+            Vector3.forward * 0.75f,
+            Vector3.back * 0.75f,
         };
 
-        [HelpBox("Proportional to pow(V, 1). aka. Viscous resistance")] public Vector3 frictionDragScale = Vector3.one;
-        [HelpBox("Proportional to pow(V, 2). aka. Inertial resistance")] public Vector3 pressureDragScale = Vector3.one;
-        [HelpBox("Proportional to pow(V, 3). aka. Inertial resistance")] public Vector3 waveDragScale = Vector3.one;
+        [HelpBox("Proportional to pow(V, 1). aka. Viscous resistance")] public Vector3 frictionDragScale = new Vector3(1f, 1f, 1f);
+        [HelpBox("Proportional to pow(V, 2). aka. Inertial resistance")] public Vector3 pressureDragScale = new Vector3(10f, 10f, 5f);
+        [HelpBox("Proportional to pow(V, 3)")] public Vector3 waveDragScale = new Vector3(10f, 10f, 5f);
 
-
-        private float volume, compartmentCount, compartmentVolume;
-        private Vector3 size;
+        private float volume, compartmentVolume, compartmentSideArea, compartmentBottomArea;
+        private int compartmentCount;
+        private Vector3 size, compartmentCrossArea;
+        private float[] flood;
         public void UpdateParameters()
         {
             size = extents * 2.0f;
@@ -139,9 +145,22 @@ namespace UdonShipSimulator
 
             compartmentCount = compartments.Length;
             compartmentVolume = volume / compartmentCount;
+
+            var sideArea = size.x * size.y * 2.0f + size.y * size.z * 2.0f;
+            compartmentSideArea = sideArea / compartmentCount;
+            var bottomArea = size.x * size.z;
+            compartmentBottomArea = bottomArea / compartmentCount;
+
+            var crossArea = new Vector3(size.y * size.z, size.x * size.z, size.x * size.y);
+            compartmentCrossArea = crossArea / compartmentCount;
+
+            flood = new float[compartmentCount];
+            for (int i = 0; i < compartmentCount; i++)
+            {
+                flood[i] = 0.0f;
+            }
         }
 
-        float flood = 0.0f;
         private Vector3 GetCompartmentPosition(Vector3 compartment)
         {
             return transform.TransformPoint(Vector3.Scale(compartment, extents));
@@ -163,6 +182,35 @@ namespace UdonShipSimulator
             return compartmentPosition + Vector3.down * Mathf.Max(extents.y - depth * 0.5f, 0.0f);
         }
 
+        private Vector3 GetCompartmentVelocity(Vector3 velocity, Vector3 angularVelocity, Vector3 position, Vector3 compartmentPosition)
+        {
+            return velocity + Vector3.Cross(angularVelocity, compartmentPosition - position);
+        }
+
+        private Vector3 GetCompartmentDrag(Vector3 velocity, float depth)
+        {
+            var localVelocity = transform.InverseTransformVector(velocity);
+
+            var sqrLocalSpeed = localVelocity.sqrMagnitude;
+            if (sqrLocalSpeed < 0.0001f) return Vector3.zero;
+
+            var localSpeed = Mathf.Sqrt(sqrLocalSpeed);
+            var cubeLocalSpeed = localSpeed * sqrLocalSpeed;
+
+            var localVelocityDirection = localVelocity / localSpeed;
+
+            var underWaterRatio = Mathf.Clamp01(depth / size.y);
+            var underWaterSurfaceArea = compartmentSideArea * underWaterRatio + compartmentBottomArea;
+            var underWaterCrossArea = compartmentCrossArea * underWaterRatio;
+
+            var waterDV = waterDensity * waterViscosity;
+
+            return transform.TransformVector(
+                - Vector3.Scale(localVelocityDirection, frictionDragScale) * waterViscosity * underWaterSurfaceArea * localSpeed
+                - Vector3.Scale(Vector3.Scale(localVelocityDirection, pressureDragScale), underWaterCrossArea) * waterDV * sqrLocalSpeed
+                - Vector3.Scale(Vector3.Scale(localVelocityDirection, waveDragScale), underWaterCrossArea) * waterDV * cubeLocalSpeed
+            );
+        }
         #endregion
 
         #region Damage
@@ -238,17 +286,24 @@ namespace UdonShipSimulator
 
         private void OnDrawGizmosSelected()
         {
-            var scale = 10.0f;
+            var scale = 100.0f;
+            var velocity = GetComponent<Rigidbody>().velocity;
+            var angularVelocity = GetComponent<Rigidbody>().angularVelocity;
 
             for (int i = 0; i < compartmentCount; i++) {
                 var p = GetCompartmentPosition(compartments[i]);
                 var d = GetCompartmenDepth(p);
-                var b = GetCompartmentBuoyancy(d, Mathf.Pow(flood, i + 1));
+                var b = GetCompartmentBuoyancy(d, flood[i]);
+                var v = GetCompartmentVelocity(velocity, angularVelocity, transform.position, p);
+                var drag = GetCompartmentDrag(v, d);
 
                 Gizmos.color = Color.red;
                 DrawGravityGizmo(p, d, scale * 0.25f);
                 Gizmos.color = Color.green;
                 DrawBuoyancyGizmo(p, d, b, scale);
+
+                Gizmos.color = Color.blue;
+                Gizmos.DrawRay(GetCompartmentBuoyancyCenter(p, d), drag * scale);
             }
 
             Gizmos.color = Color.white;

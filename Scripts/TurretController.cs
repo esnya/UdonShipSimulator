@@ -1,5 +1,6 @@
 ﻿
 using UdonSharp;
+using UdonToolkit;
 using UnityEngine;
 using VRC.SDK3.Components;
 
@@ -17,6 +18,13 @@ namespace UdonShipSimulator
         public Transform azimuthHinge, althuraHinge;
         public GunController gun;
         public AudioSource audioSource;
+        public UdonSharpBehaviour onFireTarget;
+        [Popup("behaviour", "@onFireTarget", true)] public string onFireEvent;
+        public UdonSharpBehaviour onReadyTarget;
+        [Popup("behaviour", "@onReadyTarget", true)] public string onReadyEvent;
+        public Transform previewTarget;
+        public Vector3 previewAxis = Vector3.up;
+        public bool debug;
 
         private VRCPickup pickup;
         private Vector3 respawnPosition;
@@ -42,6 +50,7 @@ namespace UdonShipSimulator
             return RemapInput(Vector3.SignedAngle(handlePivod.parent.up, Vector3.ProjectOnPlane(relativePosition, worldAxis), worldAxis));
         }
 
+
         private float ApplyAngle(float angle, Transform target, float input, float speed, float min, float max, Vector3 axis)
         {
             var nextAngle = Mathf.Clamp(angle + input * speed, min, max);
@@ -51,26 +60,32 @@ namespace UdonShipSimulator
         private float prevAzimuth, prevAlthura;
         private void Update()
         {
-            azimuthHinge.localRotation = Quaternion.AngleAxis(azimuth, azimuthAxis);
-            althuraHinge.localRotation = Quaternion.AngleAxis(althura, althuraAxis);
-
-            if (audioSource != null) audioSource.enabled = prevAzimuth != azimuth || prevAlthura != althura;
+            var diff = Mathf.Max(Mathf.Abs(prevAzimuth - azimuth), Mathf.Abs(prevAlthura - althura));
             prevAzimuth = azimuth;
             prevAlthura = althura;
 
-#if !USS_DEBUG || !UNITY_EDITOR
-            if (!pickup.IsHeld) return;
-#endif
-            var relativePosition = (transform.position - handlePivod.position).normalized;
+            if (diff != 0.0f) {
+                azimuthHinge.localRotation = Quaternion.AngleAxis(azimuth, azimuthAxis);
+                althuraHinge.localRotation = Quaternion.AngleAxis(althura, althuraAxis);
+            }
 
-            var azimuthInput = GetInput(relativePosition, Vector3.forward);
-            azimuth = ApplyAngle(azimuth, azimuthHinge, azimuthInput, azimuthSpeed, -azimuthMax, azimuthMax, azimuthAxis);
+            if (audioSource != null) audioSource.enabled = diff >= 0.1f;
 
-            var althuraInput = GetInput(relativePosition, Vector3.right);
-            althura = ApplyAngle(althura, althuraHinge, althuraInput, althuraSpeed, alturaMin, althuraMax, althuraAxis);
+            if (pickup.IsHeld || debug)
+            {
+                var relativePosition = (transform.position - handlePivod.position).normalized;
 
-            handlePivod.localRotation = Quaternion.AngleAxis(azimuthInput * handleMaxAngle, Vector3.forward) * Quaternion.AngleAxis(althuraInput * handleMaxAngle, Vector3.right);
+                var azimuthInput = GetInput(relativePosition, Vector3.forward);
+                azimuth = ApplyAngle(azimuth, azimuthHinge, azimuthInput, azimuthSpeed, -azimuthMax, azimuthMax, azimuthAxis);
 
+                var althuraInput = GetInput(relativePosition, Vector3.right);
+                althura = ApplyAngle(althura, althuraHinge, althuraInput, althuraSpeed, alturaMin, althuraMax, althuraAxis);
+
+                handlePivod.localRotation = Quaternion.AngleAxis(azimuthInput * handleMaxAngle, Vector3.forward)
+                    * Quaternion.AngleAxis(althuraInput * handleMaxAngle, Vector3.right);
+            }
+
+            if (diff != 0.0f && previewTarget != null) previewTarget.localRotation = Quaternion.AngleAxis(azimuth, previewAxis);
         }
 
         private void ReplaceLayers(bool replace)
@@ -95,6 +110,8 @@ namespace UdonShipSimulator
         public override void OnPickupUseDown()
         {
             gun.Fire();
+            if (onFireTarget != null) onFireTarget.SendCustomEvent(onFireEvent);
+            if (onReadyTarget != null) onReadyTarget.SendCustomEventDelayedSeconds(onReadyEvent, gun.GetIntervalSeconds());
         }
 
         public override void OnDrop()
