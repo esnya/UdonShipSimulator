@@ -115,6 +115,7 @@ namespace UdonShipSimulator
         public override void OnDrop()
         {
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(ResetDead));
+            IgnoreDamage(5.0f);
         }
 
         #region Physics
@@ -226,15 +227,29 @@ namespace UdonShipSimulator
 
         private GameObject spawnedDeadEffect;
         private bool dead;
+        private bool ignoreDamage;
         public void ResetDead()
         {
             dead = false;
+            ignoreDamage = false;
             if (Utilities.IsValid(spawnedDeadEffect)) Destroy(spawnedDeadEffect);
+        }
+
+        public void IgnoreDamage(float duration)
+        {
+            ignoreDamage = true;
+            SendCustomEventDelayedSeconds(nameof(EnableDamage), duration);
+        }
+
+        public void EnableDamage()
+        {
+            ignoreDamage = false;
         }
 
         public void Dead()
         {
             dead = true;
+            ignoreDamage = false;
             if (!Utilities.IsValid(spawnedDeadEffect) && deadEffect != null)
             {
                 spawnedDeadEffect = VRCInstantiate(deadEffect);
@@ -245,12 +260,12 @@ namespace UdonShipSimulator
 
         private void Capsized()
         {
-            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
+            if (!ignoreDamage) SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
         }
 
         public void BulletHit()
         {
-            if (Random.value <= 0.5f) SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
+            if (Random.value <= 0.5f && !ignoreDamage) SendCustomNetworkEvent(NetworkEventTarget.All, nameof(Dead));
         }
         #endregion
 
@@ -259,7 +274,7 @@ namespace UdonShipSimulator
         public float collisionDamage = 1.0f;
         private void OnCollisionEnter(Collision collision)
         {
-            if (collision == null || !Networking.IsOwner(gameObject) || GetIsHeld(gameObject) || GetIsHeld(collision.gameObject) || dead) return;
+            if (collision == null || !Networking.IsOwner(gameObject) || GetIsHeld(gameObject) || GetIsHeld(collision.gameObject) || dead || ignoreDamage) return;
             if (Random.Range(0, collision.relativeVelocity.sqrMagnitude * collisionDamage) >= 1.0f)
             {
                 SendCustomNetworkEvent(NetworkEventTarget.All, nameof(CollisionDamaged));
