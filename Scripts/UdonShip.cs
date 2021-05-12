@@ -12,7 +12,7 @@ namespace UdonShipSimulator
     [RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(AudioSource))]
     public class UdonShip : UdonSharpBehaviour
     {
-                public Transform centerOfMass;
+        public Transform centerOfMass;
         public Transform rudder;
         public float rudderCoefficient = 0.0001f;
         public float rudderBackwardCoefficient = 0.00005f;
@@ -23,6 +23,7 @@ namespace UdonShipSimulator
         public TextMeshPro ownerText;
 
         private new Rigidbody rigidbody;
+        private VRCPickup pickup;
         private int thrusterCount;
         private Vector3 initialPosition;
         private Quaternion initialRotation;
@@ -35,6 +36,8 @@ namespace UdonShipSimulator
             rigidbody.useGravity = true;
             if (centerOfMass != null) rigidbody.centerOfMass = transform.InverseTransformPoint(centerOfMass.position);
 
+            pickup = (VRCPickup)GetComponent(typeof(VRCPickup));
+
             thrusterCount = Mathf.Min(thrusters.Length, thrustForces.Length);
             thrustPowers = new float[thrusterCount];
 
@@ -43,9 +46,14 @@ namespace UdonShipSimulator
             OnOwnershipTransferred();
         }
 
+        private bool GetIsHeldSelf()
+        {
+            return pickup != null && pickup.IsHeld;
+        }
+
         private void FixedUpdate()
         {
-            if (!Networking.IsOwner(gameObject) || rigidbody.IsSleeping()) return;
+            if (!Networking.IsOwner(gameObject) || rigidbody.IsSleeping() || GetIsHeldSelf()) return;
 
             var velocity = rigidbody.velocity;
             var angularVelocity = rigidbody.angularVelocity;

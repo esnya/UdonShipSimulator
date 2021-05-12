@@ -2,6 +2,7 @@
 using UdonSharp;
 using UdonToolkit;
 using UnityEngine;
+using VRC.SDKBase;
 using VRC.Udon;
 using VRC.Udon.Common.Interfaces;
 
@@ -61,7 +62,7 @@ namespace UdonShipSimulator
             if (!ready) return;
             ready = false;
 
-            if (rigidbody != null) rigidbody.AddForceAtPosition(-transform.forward * reactionaryForce, transform.position, ForceMode.Force);
+            if (rigidbody != null && Networking.IsOwner(rigidbody.gameObject)) rigidbody.AddForceAtPosition(-transform.forward * reactionaryForce, transform.position, ForceMode.Force);
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(PlayFireEffect));
             SendCustomEventDelayedSeconds(nameof(Ready), GetIntervalSeconds());
         }
