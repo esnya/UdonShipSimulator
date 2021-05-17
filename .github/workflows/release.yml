@@ -1,0 +1,43 @@
+name: Release Unity Package
+
+on:
+  - push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          find Assets -name \*.meta > metaList
+          mkdir dist
+          cat metaList
+      - uses: pCYSl5EDgo/create-unitypackage@v1
+        with:
+          package-path: dist/UdonShipSimulator.unitypackage
+          include-files: metaList
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: UdonShipSimulator.unitypackage
+          path: dist/UdonShipSimulator.unitypackage
+          if-no-files-found: error
+
+  release:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+      - name: Install dependencies
+        run: npm ci
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: dist/
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
