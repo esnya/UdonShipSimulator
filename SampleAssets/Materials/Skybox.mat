@@ -8,8 +8,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Skybox
-  m_Shader: {fileID: 106, guid: 0000000000000000f000000000000000, type: 0}
-  m_ShaderKeywords: _SUNDISK_HIGH_QUALITY _TURBULENCE_ON
+  m_Shader: {fileID: 4800000, guid: 761503b1c7c8f064db222ff383925028, type: 3}
+  m_ShaderKeywords: _SUNDISK_HIGH_QUALITY _TURBULENCE_ON _UNDERFADE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
