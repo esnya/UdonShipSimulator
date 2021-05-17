@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v1
       - name: Install dependencies
-        run: npm ci
+        run: npm i
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
