@@ -6,7 +6,7 @@ using VRC.Udon.Common;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(VRCPickup)), RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(SphereCollider))]
+    [RequireComponent(typeof(VRCPickup)), RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(SphereCollider)), UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class LeverController : UdonSharpBehaviour
     {
         public Transform hinge;
@@ -23,7 +23,7 @@ namespace UdonShipSimulator
 
         private VRCPickup pickup;
         private Vector3 respawnPosition;
-        [UdonSynced(UdonSyncMode.Smooth)] private float angle = 0.0f;
+        /*[UdonSynced(UdonSyncMode.Smooth)]*/ private float angle = 0.0f;
         private void Start()
         {
             pickup = (VRCPickup)GetComponent(typeof(VRCPickup));
@@ -49,10 +49,10 @@ namespace UdonShipSimulator
                 {
                     if (Mathf.Abs(absAngle - snapAngle) <= snapDistance) angle = snapAngle * angleSign;
                 }
+                if (angle != prevAngle) Apply();
+                prevAngle = angle;
             }
 
-            if (angle != prevAngle) Apply();
-            prevAngle = angle;
         }
 
         public override void OnDrop()

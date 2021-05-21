@@ -8,7 +8,7 @@ using VRC.Udon.Common;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(VRCPickup)), RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(SphereCollider))]
+    [RequireComponent(typeof(VRCPickup)), RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(SphereCollider)), UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class HelmController : UdonSharpBehaviour
     {
         public Transform hinge;
@@ -22,7 +22,7 @@ namespace UdonShipSimulator
         private VRCPickup pickup;
         private int targetCount;
         public bool debug;
-        [UdonSynced(UdonSyncMode.Smooth)] private float angle = 0.0f;
+        /*[UdonSynced(UdonSyncMode.Smooth)]*/ private float angle = 0.0f;
         private void Start()
         {
             pickup = (VRCPickup)GetComponent(typeof(VRCPickup));

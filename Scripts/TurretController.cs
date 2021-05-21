@@ -6,7 +6,7 @@ using VRC.SDK3.Components;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(VRCPickup)), RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(SphereCollider))]
+    [RequireComponent(typeof(VRCPickup)), RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(SphereCollider)), UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
     public class TurretController : UdonSharpBehaviour
     {
         public Transform handlePivod;

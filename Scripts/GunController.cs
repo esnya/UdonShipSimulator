@@ -8,10 +8,10 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(AudioSource))]
+    [RequireComponent(typeof(AudioSource)), UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class GunController : UdonSharpBehaviour
     {
-        [ListView("Particles")] public ParticleSystem[] particles = {};
+        [ListView("Particles")] public ParticleSystem[] particles = { };
         [ListView("Particles")] public int[] emissions = { 1 };
 
         [Tooltip("fire/min")] public float fireRate = 20.0f;
@@ -53,7 +53,8 @@ namespace UdonShipSimulator
             udon.SendCustomNetworkEvent(NetworkEventTarget.Owner, "BulletHit");
         }
 
-        private void OnParticleCollision(GameObject other) {
+        private void OnParticleCollision(GameObject other)
+        {
             if (other != null) SendHitMessage(other);
         }
 

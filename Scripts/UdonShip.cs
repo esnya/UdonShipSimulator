@@ -9,7 +9,7 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(AudioSource))]
+    [RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(AudioSource)), UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class UdonShip : UdonSharpBehaviour
     {
         public Transform centerOfMass;
