@@ -7,7 +7,7 @@ namespace UdonShipSimulator
 {
     [
         DefaultExecutionOrder(1000),
-        UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync),
+        UdonBehaviourSyncMode(/*BehaviourSyncMode.None*/ BehaviourSyncMode.NoVariableSync),
     ]
     public class VariableWriter : UdonSharpBehaviour
     {

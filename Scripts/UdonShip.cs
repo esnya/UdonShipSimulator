@@ -19,7 +19,7 @@ namespace UdonShipSimulator
         [ListView("Thrusters/Screws")] public Transform[] thrusters = { };
         [ListView("Thrusters/Screws")] public float[] thrustForces = { 0.0001f };
         [HideInInspector] public float[] thrustPowers;
-        public Vector3 extents;
+        public Vector3 offset, extents = Vector3.one;
         public TextMeshPro ownerText;
 
         private new Rigidbody rigidbody;
@@ -60,14 +60,14 @@ namespace UdonShipSimulator
             var position = transform.position;
 
             for (int i = 0; i < compartmentCount; i++) {
-                if (dead) flood[i] = Mathf.Clamp01(flood[i] + Time.fixedDeltaTime * Random.Range(0.1f, 0.2f));
+                if (dead) flood[i] = Mathf.Clamp01(flood[i] + Time.fixedDeltaTime * Random.Range(0.0f, 0.1f));
                 else flood[i] = 0;
 
                 var p = GetCompartmentPosition(compartments[i]);
                 var d = GetCompartmenDepth(p);
                 var v = GetCompartmentVelocity(velocity, angularVelocity, position, p);
                 var force = Vector3.up * GetCompartmentBuoyancy(d, flood[i]) + GetCompartmentDrag(v, d);
-                rigidbody.AddForceAtPosition(force, GetCompartmentBuoyancyCenter(p, d), ForceMode.Force);
+                rigidbody.AddForceAtPosition(Vector3.ClampMagnitude(force, maxForce), GetCompartmentBuoyancyCenter(p, d), ForceMode.Force);
             }
 
             if (!dead)
@@ -75,7 +75,7 @@ namespace UdonShipSimulator
                 for (int i = 0; i < thrusterCount; i++)
                 {
                     var thruster = thrusters[i];
-                    if (thruster.position.y >= 0) continue;
+                    if (thruster.position.y >= seaHeight) continue;
 
                     var power = thrustForces[i] * thrustPowers[i];
                     rigidbody.AddForceAtPosition(thruster.forward * power, thruster.position, ForceMode.Force);
@@ -85,7 +85,7 @@ namespace UdonShipSimulator
             var localVelocity = transform.InverseTransformVector(velocity);
             var cl = Vector3.Dot(velocity.normalized, rudder.right);
             var l = -0.5f * waterDensity * rigidbody.velocity.sqrMagnitude * (localVelocity.z >= 0 ? rudderCoefficient : rudderBackwardCoefficient) * cl;
-            rigidbody.AddForceAtPosition(rudder.right * l, rudder.position, ForceMode.Force);
+            rigidbody.AddForceAtPosition(Vector3.ClampMagnitude(rudder.right * l, maxForce), rudder.position, ForceMode.Force);
         }
 
         public override void OnOwnershipTransferred()
@@ -104,10 +104,17 @@ namespace UdonShipSimulator
             if (pickup == null) return false;
             return pickup.IsHeld;
         }
+
+        public void TakeOwnership()
+        {
+            Networking.SetOwner(Networking.LocalPlayer, gameObject);
+        }
+
         public void Respawn()
         {
             Networking.SetOwner(Networking.LocalPlayer, gameObject);
-            rigidbody.ResetInertiaTensor();
+            rigidbody.velocity = Vector3.zero;
+            rigidbody.angularVelocity = Vector3.zero;
             transform.position = initialPosition;
             transform.rotation = initialRotation;
             SendCustomNetworkEvent(NetworkEventTarget.All, nameof(ResetDead));
@@ -128,6 +135,7 @@ namespace UdonShipSimulator
 
         #region Physics
         [SectionHeader("Water Phisics")]
+        public bool parentIsSeaLevel = true;
         public float waterDensity = 0.99997495f;
         public float waterViscosity = 0.000890f;
 
@@ -142,7 +150,9 @@ namespace UdonShipSimulator
         [HelpBox("Proportional to pow(V, 1). aka. Viscous resistance")] public Vector3 frictionDragScale = new Vector3(1f, 1f, 1f);
         [HelpBox("Proportional to pow(V, 2). aka. Inertial resistance")] public Vector3 pressureDragScale = new Vector3(10f, 10f, 5f);
         [HelpBox("Proportional to pow(V, 3)")] public Vector3 waveDragScale = new Vector3(10f, 10f, 5f);
+        public float maxForce = 1000;
 
+        private float seaHeight;
         private float volume, compartmentVolume, compartmentSideArea, compartmentBottomArea;
         private int compartmentCount;
         private Vector3 size, compartmentCrossArea;
@@ -168,16 +178,18 @@ namespace UdonShipSimulator
             {
                 flood[i] = 0.0f;
             }
+
+            seaHeight = parentIsSeaLevel ? transform.parent.position.y : 0;
         }
 
         private Vector3 GetCompartmentPosition(Vector3 compartment)
         {
-            return transform.TransformPoint(Vector3.Scale(compartment, extents));
+            return transform.TransformPoint(Vector3.Scale(compartment, extents) + offset);
         }
 
         private float GetCompartmenDepth(Vector3 position)
         {
-            return Mathf.Clamp(extents.y - position.y , 0, size.y);
+            return Mathf.Clamp(extents.y + offset.y - position.y + seaHeight , 0, size.y);
         }
 
         private float GetCompartmentBuoyancy(float depth, float flood)
@@ -188,7 +200,7 @@ namespace UdonShipSimulator
 
         private Vector3 GetCompartmentBuoyancyCenter(Vector3 compartmentPosition, float depth)
         {
-            return compartmentPosition + Vector3.down * Mathf.Max(extents.y - depth * 0.5f, 0.0f);
+            return compartmentPosition + Vector3.down * Mathf.Max(extents.y + offset.y - depth * 0.5f, 0.0f);
         }
 
         private Vector3 GetCompartmentVelocity(Vector3 velocity, Vector3 angularVelocity, Vector3 position, Vector3 compartmentPosition)
@@ -225,12 +237,13 @@ namespace UdonShipSimulator
         #region Damage
         [SectionHeader("Damage")]
         public GameObject deadEffect;
+        public bool capsizing = true;
         [Range(0, 1.0f)] public float capsizingThreshold = 0.9f;
         private void Update()
         {
             if (!Networking.IsOwner(gameObject)) return;
 
-            if (Vector3.Dot(transform.up, Vector3.down) > capsizingThreshold) Capsized();
+            if (capsizing && Vector3.Dot(transform.up, Vector3.down) > capsizingThreshold) Capsized();
         }
 
         private GameObject spawnedDeadEffect;
@@ -329,9 +342,21 @@ namespace UdonShipSimulator
                 Gizmos.DrawRay(GetCompartmentBuoyancyCenter(p, d), drag * scale);
             }
 
+
+            if (!dead)
+            {
+                for (int i = 0; i < thrusterCount; i++)
+                {
+                    var thruster = thrusters[i];
+                    if (thruster.position.y >= seaHeight) continue;
+
+                    Gizmos.DrawRay(thruster.position, thruster.forward * thrustPowers[i]);
+                }
+            }
+
             Gizmos.color = Color.white;
             Gizmos.matrix = transform.localToWorldMatrix;
-            Gizmos.DrawWireCube(Vector3.zero, extents * 2.0f);
+            Gizmos.DrawWireCube(offset, extents * 2.0f);
             Gizmos.matrix = Matrix4x4.identity;
         }
 #endif
