@@ -20,7 +20,7 @@ namespace UdonShipSimulator
         public float objectSpeedThreshold = 1.0f;
         public float playerExitDelay = 1.0f;
         public float objectExitDelay = 1.0f;
-        public float fakeFriction = 0.1f;
+        public float fakeFriction = 0.05f;
         [Popup("@timings")] public int measurementTiming, movingFloorTiming, setPlayerVelocityTiming, teleportPlayerTiming = DISABLED, movingObjectTiming = POST_LATE_UPDATE;
 
         [NonSerialized] public string[] timings = {
@@ -258,8 +258,8 @@ namespace UdonShipSimulator
                 else
                 {
                     rigidbody.velocity = targetVelocity;
-                    rigidbody.angularVelocity = angularVelocity;
                 }
+                rigidbody.angularVelocity = Vector3.Lerp(rigidbody.angularVelocity, angularVelocity, fakeFriction);
             }
         }
 
