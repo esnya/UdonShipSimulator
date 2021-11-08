@@ -3,6 +3,7 @@ using TMPro;
 using UdonSharp;
 using UdonToolkit;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 using VRC.SDK3.Components;
 using VRC.SDKBase;
 using VRC.Udon.Common.Interfaces;
@@ -58,6 +59,7 @@ namespace UdonShipSimulator
             var velocity = rigidbody.velocity;
             var angularVelocity = rigidbody.angularVelocity;
             var position = transform.position;
+            var gravity = Physics.gravity;
 
             for (int i = 0; i < compartmentCount; i++) {
                 if (dead) flood[i] = Mathf.Clamp01(flood[i] + Time.fixedDeltaTime * Random.Range(0.0f, 0.1f));
@@ -66,7 +68,7 @@ namespace UdonShipSimulator
                 var p = GetCompartmentPosition(compartments[i]);
                 var d = GetCompartmenDepth(p);
                 var v = GetCompartmentVelocity(velocity, angularVelocity, position, p);
-                var force = Vector3.up * GetCompartmentBuoyancy(d, flood[i]) + GetCompartmentDrag(v, d);
+                var force = GetCompartmentBuoyancy(d, gravity, flood[i]) + GetCompartmentDrag(v, d);
                 rigidbody.AddForceAtPosition(Vector3.ClampMagnitude(force, maxForce), GetCompartmentBuoyancyCenter(p, d), ForceMode.Force);
             }
 
@@ -133,6 +135,11 @@ namespace UdonShipSimulator
             IgnoreDamage(5.0f);
         }
 
+        public override void OnSpawn()
+        {
+            Debug.Log("USS Spawn");
+        }
+
         #region Physics
         [SectionHeader("Water Phisics")]
         public bool parentIsSeaLevel = true;
@@ -189,13 +196,13 @@ namespace UdonShipSimulator
 
         private float GetCompartmenDepth(Vector3 position)
         {
-            return Mathf.Clamp(extents.y + offset.y - position.y + seaHeight , 0, size.y);
+            return Mathf.Clamp(extents.y - offset.y - position.y + seaHeight , 0, size.y);
         }
 
-        private float GetCompartmentBuoyancy(float depth, float flood)
+        private Vector3 GetCompartmentBuoyancy(float depth, Vector3 gravity, float flood)
         {
             var underWaterVolume = compartmentVolume * depth / size.y;
-            return underWaterVolume * waterDensity * (1.0f - flood);
+            return -gravity * underWaterVolume * waterDensity * (1.0f - flood);
         }
 
         private Vector3 GetCompartmentBuoyancyCenter(Vector3 compartmentPosition, float depth)
@@ -311,35 +318,31 @@ namespace UdonShipSimulator
         #endregion
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
-        private void DrawGravityGizmo(Vector3 p, float d, float scale)
-        {
-            Gizmos.DrawRay(GetCompartmentBuoyancyCenter(p, d), Physics.gravity * GetComponent<Rigidbody>().mass * scale);
-        }
-        private void DrawBuoyancyGizmo(Vector3 p, float d, float buoyancy, float scale)
-        {
-            Gizmos.DrawRay(GetCompartmentBuoyancyCenter(p, d), Vector3.up * buoyancy * scale);
-        }
-
         private void OnDrawGizmosSelected()
         {
-            var scale = 100.0f;
-            var velocity = GetComponent<Rigidbody>().velocity;
-            var angularVelocity = GetComponent<Rigidbody>().angularVelocity;
+            var rigidbody = GetComponent<Rigidbody>();
+            var mass = rigidbody.mass;
+            var velocity = rigidbody.velocity;
+            var angularVelocity = rigidbody.angularVelocity;
+            var scale = 1.0f / mass;
 
             for (int i = 0; i < compartmentCount; i++) {
-                var p = GetCompartmentPosition(compartments[i]);
-                var d = GetCompartmenDepth(p);
-                var b = GetCompartmentBuoyancy(d, flood[i]);
-                var v = GetCompartmentVelocity(velocity, angularVelocity, transform.position, p);
-                var drag = GetCompartmentDrag(v, d);
+                var compartmentPosition = GetCompartmentPosition(compartments[i]);
+                var compartmentDepth = GetCompartmenDepth(compartmentPosition);
+                var compartmentVelocity = GetCompartmentVelocity(velocity, angularVelocity, transform.position, compartmentPosition);
 
-                Gizmos.color = Color.red;
-                DrawGravityGizmo(p, d, scale * 0.25f);
-                Gizmos.color = Color.green;
-                DrawBuoyancyGizmo(p, d, b, scale);
+                var buoyancy = GetCompartmentBuoyancy(compartmentDepth, Physics.gravity, flood[i]);
+                var drag = GetCompartmentDrag(compartmentVelocity, compartmentDepth);
+                var buoyancyCenter = GetCompartmentBuoyancyCenter(compartmentPosition, compartmentDepth);
+
+                Gizmos.color = new Color(1, 0, 0, 0.5f);
+                Gizmos.DrawRay(compartmentPosition, Physics.gravity * mass * scale);
+
+                Gizmos.color = new Color(0, 1, 0, 0.5f);
+                Gizmos.DrawRay(buoyancyCenter, buoyancy * scale);
 
                 Gizmos.color = Color.blue;
-                Gizmos.DrawRay(GetCompartmentBuoyancyCenter(p, d), drag * scale);
+                Gizmos.DrawRay(buoyancyCenter, drag * scale * 10);
             }
 
 
