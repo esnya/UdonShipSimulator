@@ -39,6 +39,7 @@ namespace UdonShipSimulator
         private Transform parent;
         private Vector3 relativePosition;
         private Quaternion relativeRotation;
+        private Rigidbody attachedRigidbody;
 
         private Vector3 velocity, angularVelocity;
 
@@ -53,6 +54,7 @@ namespace UdonShipSimulator
         private void Start()
         {
             parent = transform.parent;
+            attachedRigidbody = parent.GetComponentInParent<Rigidbody>();
             relativePosition = transform.localPosition;
             relativeRotation = transform.localRotation;
             transform.SetParent(null, true);
@@ -175,7 +177,7 @@ namespace UdonShipSimulator
 
         private void EnterObject(Rigidbody rigidbody)
         {
-            if (rigidbody == null) return;
+            if (rigidbody == null || rigidbody == attachedRigidbody) return;
 
             foreach (var r in objects)
             {
