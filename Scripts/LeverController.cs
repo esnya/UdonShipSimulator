@@ -18,7 +18,7 @@ namespace UdonShipSimulator
         public bool inverse = true;
 
         public int thrusterIndex = 0;
-        public UdonShip ship;
+        public UdonShipScrew screw;
         public bool debug;
 
         private VRCPickup pickup;
@@ -66,9 +66,9 @@ namespace UdonShipSimulator
             hinge.localRotation = Quaternion.Euler(angle, 0, 0);
             var power = Mathf.Clamp(angle / maxAngle, -1, 1);
             if (inverse) power *= -1;
-            if (ship != null && Networking.IsOwner(ship.gameObject))
+            if (screw != null)
             {
-                ship.SetThrustPower(power);
+                screw.throttle = power;
             }
         }
     }
