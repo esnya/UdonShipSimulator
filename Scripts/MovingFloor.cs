@@ -13,7 +13,7 @@ using VRC.Udon.Common;
 namespace UdonShipSimulator
 {
     [RequireComponent(typeof(Rigidbody))]
-    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class MovingFloor : UdonSharpBehaviour
     {
         public int bufferSize = 32;

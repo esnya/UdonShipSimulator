@@ -6,7 +6,10 @@ using VRC.Udon.Common;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(VRCPickup)), RequireComponent(typeof(Rigidbody)), RequireComponent(typeof(SphereCollider)), UdonBehaviourSyncMode(/*BehaviourSyncMode.None*/ BehaviourSyncMode.NoVariableSync)]
+    [RequireComponent(typeof(VRCPickup))]
+    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(SphereCollider))]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class LeverController : UdonSharpBehaviour
     {
         public Transform hinge;

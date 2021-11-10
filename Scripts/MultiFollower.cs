@@ -6,7 +6,7 @@ using VRC.Udon;
 
 namespace UdonShipSimulator
 {
-    [UdonBehaviourSyncMode(/*BehaviourSyncMode.None*/ BehaviourSyncMode.NoVariableSync)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class MultiFollower : UdonSharpBehaviour
     {
         public Transform sourceContainer;

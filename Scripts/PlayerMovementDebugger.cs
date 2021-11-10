@@ -11,7 +11,7 @@ using VRC.Udon.Common.Interfaces;
 namespace UdonShipSimulator
 {
     [RequireComponent(typeof(TextMeshPro))]
-    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class PlayerMovementDebugger : UdonSharpBehaviour
     {
         private TextMeshPro textMesh;

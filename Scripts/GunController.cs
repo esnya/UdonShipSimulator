@@ -8,7 +8,8 @@ using VRC.Udon.Common.Interfaces;
 
 namespace UdonShipSimulator
 {
-    [RequireComponent(typeof(AudioSource)), UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
+    [RequireComponent(typeof(AudioSource))]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
     public class GunController : UdonSharpBehaviour
     {
         [ListView("Particles")] public ParticleSystem[] particles = { };

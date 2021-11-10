@@ -12,7 +12,7 @@ using UdonSharpEditor;
 
 namespace UdonShipSimulator
 {
-    [UdonBehaviourSyncMode(/*BehaviourSyncMode.None*/ BehaviourSyncMode.NoVariableSync)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class MaterialPropertyBlockWriter : UdonSharpBehaviour
     {
         public bool onStart;

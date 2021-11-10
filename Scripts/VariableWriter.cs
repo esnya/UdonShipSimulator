@@ -5,10 +5,8 @@ using UnityEngine;
 
 namespace UdonShipSimulator
 {
-    [
-        DefaultExecutionOrder(1000),
-        UdonBehaviourSyncMode(/*BehaviourSyncMode.None*/ BehaviourSyncMode.NoVariableSync),
-    ]
+    [DefaultExecutionOrder(1000)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class VariableWriter : UdonSharpBehaviour
     {
         public bool onStart;

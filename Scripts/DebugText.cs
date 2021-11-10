@@ -10,7 +10,7 @@ using VRC.Udon.Common.Interfaces;
 namespace UdonShipSimulator
 {
     [RequireComponent(typeof(TextMeshPro))]
-    [UdonBehaviourSyncMode(BehaviourSyncMode.NoVariableSync)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class DebugText : UdonSharpBehaviour
     {
         public int updateInterval = 10;

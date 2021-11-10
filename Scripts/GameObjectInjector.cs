@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UdonShipSimulator
 {
-    [UdonBehaviourSyncMode(/*BehaviourSyncMode.None*/ BehaviourSyncMode.NoVariableSync)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class GameObjectInjector : UdonSharpBehaviour
     {
         public bool onStart, destroySelf;
