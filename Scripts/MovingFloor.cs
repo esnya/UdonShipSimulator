@@ -20,8 +20,10 @@ namespace UdonShipSimulator
         public float objectSpeedThreshold = 1.0f;
         public float playerExitDelay = 1.0f;
         public float objectExitDelay = 1.0f;
-        public float fakeFriction = 0.05f;
-        [Popup("@timings")] public int measurementTiming, movingFloorTiming, setPlayerVelocityTiming, teleportPlayerTiming = DISABLED, movingObjectTiming = POST_LATE_UPDATE;
+        public float velocitySmoothing = 2.5f;
+        public float angularVelocitySmoothing = 2.5f;
+        public float fakeFriction = 0.1f;
+        [Popup("@timings")] public int measurementTiming = UPDATE, movingFloorTiming, setPlayerVelocityTiming, teleportPlayerTiming = DISABLED, movingObjectTiming = POST_LATE_UPDATE;
 
         [NonSerialized] public string[] timings = {
             "Fixed Update",
@@ -115,12 +117,12 @@ namespace UdonShipSimulator
 
         public override void InputMoveHorizontal(float value, UdonInputEventArgs args)
         {
-            playerMoveInput.x = value * Networking.LocalPlayer.GetWalkSpeed();
+            playerMoveInput.x = value * GetWalkSpeed(Networking.LocalPlayer);
         }
 
         public override void InputMoveVertical(float value, UdonInputEventArgs args)
         {
-            playerMoveInput.z = value * Networking.LocalPlayer.GetWalkSpeed();
+            playerMoveInput.z = value * GetWalkSpeed(Networking.LocalPlayer);
         }
 
         private void UpdateIfNessesory(int timing, float deltaTime)
@@ -129,7 +131,7 @@ namespace UdonShipSimulator
             if (movingFloorTiming == timing) MoveFloor();
             if (setPlayerVelocityTiming == timing) SetPlayerVelocity();
             if (teleportPlayerTiming == timing) TeleportPlayer(deltaTime);
-            if (movingObjectTiming == timing) MoveObjects();
+            if (movingObjectTiming == timing) MoveObjects(deltaTime);
 
             if (timing == POST_LATE_UPDATE)
             {
@@ -163,8 +165,8 @@ namespace UdonShipSimulator
             prevRotation = rotation;
 
             var deltaTime = Time.deltaTime;
-            velocity = positionDiff / deltaTime;
-            angularVelocity = rotationDiff.eulerAngles * deltaTime;
+            velocity = Vector3.Lerp(positionDiff / deltaTime, velocity, velocitySmoothing * Time.deltaTime);
+            angularVelocity = Vector3.Lerp(rotationDiff.eulerAngles / deltaTime, angularVelocity, angularVelocitySmoothing * Time.deltaTime);
         }
 
         private void MoveFloor()
@@ -173,6 +175,11 @@ namespace UdonShipSimulator
                 parent.TransformPoint(relativePosition),
                 relativeRotation * parent.rotation
             );
+        }
+
+        private float GetWalkSpeed(VRCPlayerApi player)
+        {
+            return Input.GetKey(KeyCode.LeftShift) ? player.GetRunSpeed() : player.GetWalkSpeed();
         }
 
         private void EnterObject(Rigidbody rigidbody)
@@ -216,6 +223,7 @@ namespace UdonShipSimulator
             var r2 = Quaternion.Euler(angularVelocity) * r1;
             return r2 - r1;
         }
+
         private void SetPlayerVelocity()
         {
             if (!playerOnFloor) return;
@@ -242,7 +250,7 @@ namespace UdonShipSimulator
             );
         }
 
-        private void MoveObjects()
+        private void MoveObjects(float deltaTime)
         {
             foreach (var rigidbody in objects)
             {
@@ -255,13 +263,13 @@ namespace UdonShipSimulator
 
                 if (Vector3.Distance(rigidbody.velocity, velocity) > objectSpeedThreshold)
                 {
-                    rigidbody.velocity = Vector3.Lerp(rigidbody.velocity, targetVelocity, fakeFriction);
+                    rigidbody.velocity = Vector3.Lerp(rigidbody.velocity, targetVelocity, fakeFriction * deltaTime);
                 }
                 else
                 {
                     rigidbody.velocity = targetVelocity;
                 }
-                rigidbody.angularVelocity = Vector3.Lerp(rigidbody.angularVelocity, angularVelocity, fakeFriction);
+                // rigidbody.angularVelocity = Vector3.Lerp(rigidbody.angularVelocity, -angularVelocity, fakeFriction * deltaTime);
             }
         }
 
