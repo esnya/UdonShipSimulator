@@ -1,0 +1,25 @@
+{
+  "name": "com.nekometer.esnya.udon-ship-simulator",
+  "displayName": "Udon Ship Simulator",
+  "unity": "2019.4",
+  "version": "1.0.0",
+  "description": "Simple Ship Simulation for Udon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/esnya/UdonShipSimulator.git"
+  },
+  "keywords": [
+    "VRChat",
+    "Udon",
+    "Ship",
+    "Simulation"
+  ],
+  "author": {
+    "name": "esnya"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/esnya/UdonShipSimulator/issues"
+  },
+  "homepage": "https://github.com/esnya/UdonShipSimulator#readme"
+}
