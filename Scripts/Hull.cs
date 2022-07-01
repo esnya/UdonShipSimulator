@@ -2,14 +2,16 @@ using JetBrains.Annotations;
 using System;
 using UdonSharp;
 using UnityEngine;
+using UdonShipSimulator;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
+using UnityEditor;
 using UdonSharpEditor;
 #endif
 
-namespace USS
+namespace USS2
 {
-    [DefaultExecutionOrder(100)] // After Appendants
+    [DefaultExecutionOrder(100)] // After Appendages
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class Hull : UdonSharpBehaviour
     {
@@ -42,11 +44,12 @@ namespace USS
         private AnimationCurve[] blockSurfaceProfiles;
         private Vector3[] blockLocalForceList;
         private bool initialized;
-        private Rigidbody vesselRisidbody;
+        private Rigidbody vesselRigidbody;
         [NonSerialized] public Ocean ocean;
         private AnimationCurve forwardCTProfile;
         private AnimationCurve sideCTProfile;
         private AnimationCurve verticalCTProfile;
+        private UdonSharpBehaviour[] appendages;
 
         private void Start()
         {
@@ -56,12 +59,17 @@ namespace USS
 
         private void FixedUpdate()
         {
-            if (!vesselRisidbody) return;
+            if (!vesselRigidbody) return;
             var gravity = Physics.gravity;
 
             for (var index = 0; index < blocks; index++)
             {
-                vesselRisidbody.AddForceAtPosition(GetBlockBuoyancy(index, gravity) - transform.TransformVector(blockLocalForceList[index]), GetBlockCenterOfBuoyancy(index));
+                var force = GetBlockBuoyancy(index, gravity) - transform.TransformVector(blockLocalForceList[index]);
+                if (float.IsNaN(force.x))
+                {
+                    Debug.Log($"[{vesselRigidbody.gameObject.name}][{index}] fr={blockLocalForceList[index]}, fb={GetBlockBuoyancy(index, gravity)}");
+                }
+                vesselRigidbody.AddForceAtPosition(GetBlockBuoyancy(index, gravity) - transform.TransformVector(blockLocalForceList[index]), GetBlockCenterOfBuoyancy(index));
             }
         }
 
@@ -69,9 +77,9 @@ namespace USS
         {
             if (!initialized) return;
 
-            var velocity = vesselRisidbody.velocity;
-            var angularVelocity = vesselRisidbody.angularVelocity;
-            var centerOfMass = vesselRisidbody.worldCenterOfMass;
+            var velocity = vesselRigidbody.velocity;
+            var angularVelocity = vesselRigidbody.angularVelocity;
+            var centerOfMass = vesselRigidbody.worldCenterOfMass;
             var g = Physics.gravity.magnitude;
 
             for (var index = 0; index < blocks; index++)
@@ -84,9 +92,9 @@ namespace USS
                 blockDraughts[index] = d;
                 blockBuoyancies[index] = rho * v;
 
-                var s = blockSurfaceProfiles[index].Evaluate(d);
-                if (s > 0)
+                if (d > 0)
                 {
+                    var s = blockSurfaceProfiles[index].Evaluate(d);
                     var centerOfBuoyancy = p + transform.up * d;
                     var blockLocalVelocity = transform.InverseTransformVector(velocity + Vector3.Cross(angularVelocity, centerOfBuoyancy - centerOfMass));
 
@@ -94,6 +102,10 @@ namespace USS
                         Vector3.forward * GetResistanceForce(forwardCTProfile.Evaluate(GetFn(length, Mathf.Abs(blockLocalVelocity.z), g)), rho, s, blockLocalVelocity.z)
                         + Vector3.right * GetResistanceForce(sideCTProfile.Evaluate(GetFn(beam, Mathf.Abs(blockLocalVelocity.x), g)), rho, s, blockLocalVelocity.x)
                         + Vector3.up * GetResistanceForce(verticalCTProfile.Evaluate(GetFn(d, Mathf.Abs(blockLocalVelocity.y), g)), rho, s, blockLocalVelocity.y);
+                    if (float.IsNaN(blockLocalForceList[index].x))
+                    {
+                        Debug.Log($"[{vesselRigidbody.gameObject.name}][{index}] f={blockLocalForceList[index]}, b={bottomPoint}, p={p}, d={d}, v={v}, s={s}");
+                    }
                 }
                 else
                 {
@@ -105,9 +117,9 @@ namespace USS
         [PublicAPI]
         public void UpdateProfiles()
         {
-            vesselRisidbody = GetComponentInParent<Rigidbody>();
+            vesselRigidbody = GetComponentInParent<Rigidbody>();
 
-            ocean = vesselRisidbody.GetComponentInParent<Ocean>();
+            ocean = vesselRigidbody.GetComponentInParent<Ocean>();
 
             seaLevel = ocean ? ocean.transform.position.y : 0.0f;
             rho = ocean ? ocean.rho : 1025.0f;
@@ -124,7 +136,6 @@ namespace USS
             blockSurfaceProfiles = new AnimationCurve[blocks];
 
             db = beam / beamSteps * 0.5f;
-
 
             for (var i = 0; i < lengthSteps; i++)
             {
@@ -152,10 +163,37 @@ namespace USS
                 }
             }
 
+            appendages = GetAppendages();
+
             var maxSpeed = 100.0f;
             forwardCTProfile = GetSideCTProfile(maxSpeed);
             sideCTProfile = GetForwardCTProfile(maxSpeed);
             verticalCTProfile = GetVerticalCTProfile(maxSpeed);
+        }
+
+        private UdonSharpBehaviour[] GetAppendages()
+        {
+            var hullAppendages = vesselRigidbody.GetComponentsInChildren<HullAppendage>();
+            var rudders = vesselRigidbody.GetComponentsInChildren<Rudder>();
+            var screwPropellers = vesselRigidbody.GetComponentsInChildren<ScrewPropeller>();
+            var bildgeKeels = vesselRigidbody.GetComponentsInChildren<BilgeKeel>();
+
+            var appendages = new UdonSharpBehaviour[hullAppendages.Length + rudders.Length + screwPropellers.Length + bildgeKeels.Length];
+            var i = 0;
+
+            Array.Copy(hullAppendages, 0, appendages, i, hullAppendages.Length);
+            i += hullAppendages.Length;
+
+            Array.Copy(rudders, 0, appendages, i, rudders.Length);
+            i += rudders.Length;
+
+            Array.Copy(screwPropellers, 0, appendages, i, screwPropellers.Length);
+            i += screwPropellers.Length;
+
+            Array.Copy(bildgeKeels, 0, appendages, i, bildgeKeels.Length);
+            // i += bildgeKeels.Length;
+
+            return appendages;
         }
 
         private float GetK(float cb, float l, float b, float d)
@@ -566,24 +604,19 @@ namespace USS
         #endregion
 
         #region ITTC1957
-        private float GetCF(float rn)
+        public float GetCF(float rn)
         {
             return 0.075f / Mathf.Pow((Mathf.Log(rn) / Mathf.Log(10)) - 2.0f, 2.0f);
         }
         #endregion
 
         #region HoltropMennenMethod
-        private float GetRt(float rf, float k1, float rapp, float rw, float rb, float rtr, float ra)
-        {
-            return rf * (1 + k1) + rapp + rw + rb + rtr + ra;
-        }
-
         private float GetLR(float cp, float lcb)
         {
             return length * (1.0f - cp + 0.06f * cp * lcb / (4.0f * cp - 1.0f));
         }
 
-        private float GetK1(float cp, float lcb)
+        public float GetK1(float cp, float lcb)
         {
             var cs = 0.0f;
 
@@ -594,7 +627,7 @@ namespace USS
             return c13 * (0.93f + c12 * Mathf.Pow(beam / lr, 0.92497f) * Mathf.Pow(0.95f - cp, -0.521448f) * Mathf.Pow(1 - cp + 0.0225f * lcb, 0.6906f)) - 1.0f;
         }
 
-        private float GetRW(float rho, float volume, float cp, float cm, float cw, float fn, float g, float v, float at, float hb, float abt, float tf, float lcb)
+        public float GetCW(float rho, float s, float volume, float cp, float cm, float cw, float fn, float g, float v, float at, float hb, float abt, float tf, float lcb)
         {
             var t = depth;
             var l = length;
@@ -629,12 +662,13 @@ namespace USS
             var m4 = c15 * 0.5f * Mathf.Exp(-0.034f * Mathf.Pow(fn, -3.29f));
             var m2 = m4;
 
-            return c1 * c2 * c5 * volume * rho * g * Mathf.Exp(m1 * Mathf.Pow(fn, d) + m2 * Mathf.Cos(λ * Mathf.Pow(fn, -2.0f)));
+            return c1 * c2 * c5 * volume * g * Mathf.Exp(m1 * Mathf.Pow(fn, d) + m2 * Mathf.Cos(λ * Mathf.Pow(fn, -2.0f))) / (0.5f * Mathf.Pow(v, 2.0f) * s);
         }
 
-        private float GetCT(
+        public float GetCT(
             float l,
-            float speed,
+            float v,
+            float cp,
             float cm,
             float cw,
             float g,
@@ -642,22 +676,15 @@ namespace USS
             float surface
         )
         {
-            var rn = GetRn(rho, mu, length, speed);
-            var fn = GetFn(l, speed, g);
-
-            var cp = volume / (length * beam * designedDraught);
+            var fn = GetFn(l, v, g);
             var lcb = 0.0f;
             var at = 0.0f;
             var tf = designedDraught;
             var hb = tf / 2.0f;
-            var abt = 0.0f;
-
-            var cf = GetCF(rn);
-
+            var f = GetCF(GetRn(rho, mu, l, volume));
+            var w = GetCW(rho, surface, volume, cp, cm, cw, fn, g, v, at, hb, 0.0f, tf, lcb);
             var k1 = GetK1(cp, lcb);
-            var rw = GetRW(rho, volume, cp, cm, cw, fn, g, speed, at, hb, abt, tf, lcb);
-
-            return cf * (1.0f + k1) + GetResistanceCoefficient(rw, rho, surface, speed);
+            return f * (1 + k1) + w;
         }
 
         public AnimationCurve GetCTProfile(float l, float maxSpeed, float cm, float cw)
@@ -666,12 +693,14 @@ namespace USS
             var result = CreateAnimationCurve();
             var volume = GetVolume(designedDraught);
             var surface = GetSurfaceAreaByDraughtProfile().Evaluate(designedDraught);
+            var am = GetCrossSectionAreaByDraughtProfile(0.5f).Evaluate(designedDraught);
+            var cp = volume / (l * am);
 
             for (var i = 0; i < curveProfilingSteps; i++)
             {
                 var speed = maxSpeed * (i + 0.5f) / curveProfilingSteps;
                 var fn = GetFn(l, speed, g);
-                var ct = GetCT(l, speed, cm, cw, g, volume, surface);
+                var ct = GetCT(l, speed, cp, cm, cw, g, volume, surface);
 
                 result.AddKey(fn, ct);
             }
@@ -682,27 +711,29 @@ namespace USS
 
         public AnimationCurve GetForwardCTProfile(float maxSpeed)
         {
+            var l = GetWaterLineLengthByDraughtProfile().Evaluate(designedDraught);
             var cm = GetCrossSectionAreaByDraughtProfile(0.5f).Evaluate(designedDraught) / (beam * designedDraught);
-            var cw = GetWaterplaneAreaByDraughtProfile().Evaluate(designedDraught) / (beam * length);
-            return GetCTProfile(length, maxSpeed, cm, cw);
+            var cw = GetWaterplaneAreaByDraughtProfile().Evaluate(designedDraught) / (beam *  l);
+            return GetCTProfile(l, maxSpeed, cm, cw);
         }
         public AnimationCurve GetSideCTProfile(float maxSpeed)
         {
+            var l = GetWaterLineLengthByDraughtProfile().Evaluate(designedDraught);
             var midshipSectionArea = 0.0f;
-            var dv = length / curveProfilingSteps;
+            var dv = l / curveProfilingSteps;
             for (var i = 0; i < curveProfilingSteps; i++)
             {
                 var v = (i + 0.5f) / curveProfilingSteps;
                 var d = Mathf.Max(designedDraught - GetKeelDepthAt(v), 0.0f);
                 midshipSectionArea += d * dv;
             }
-            var cm = midshipSectionArea / (length * designedDraught);
-            var cw = GetWaterplaneAreaByDraughtProfile().Evaluate(designedDraught) / (beam * length);
+            var cm = midshipSectionArea / (l * designedDraught);
+            var cw = GetWaterplaneAreaByDraughtProfile().Evaluate(designedDraught) / (beam *l);
             return GetCTProfile(length, maxSpeed, cm, cw);
         }
         public AnimationCurve GetVerticalCTProfile(float maxSpeed)
         {
-            var cm = GetWaterplaneAreaByDraughtProfile().Evaluate(designedDraught) / (beam * length);
+            var cm = GetWaterplaneAreaByDraughtProfile().Evaluate(designedDraught) / (beam * GetWaterLineLengthByDraughtProfile().Evaluate(designedDraught));
             var cw = cm;
             return GetCTProfile(length, maxSpeed, cm, cw);
         }
@@ -716,12 +747,12 @@ namespace USS
             if (!initialized) return;
 
             var gravity = Physics.gravity;
-            var mass = vesselRisidbody?.mass ?? GetVolume(0.75f) * rho;
-            var centerOfMass = vesselRisidbody.worldCenterOfMass;
-            var velocity = vesselRisidbody.velocity;
-            var angularVelocity = vesselRisidbody.angularVelocity;
+            var mass = vesselRigidbody?.mass ?? GetVolume(0.75f) * rho;
+            var centerOfMass = vesselRigidbody.worldCenterOfMass;
+            var velocity = vesselRigidbody.velocity;
+            var angularVelocity = vesselRigidbody.angularVelocity;
 
-            var forceScale = depth * 9.81f / mass;
+            var forceScale = SceneView.currentDrawingSceneView.size * 9.81f / mass;
 
             for (var index = 0; index < blocks; index++)
             {
@@ -731,7 +762,7 @@ namespace USS
                 Gizmos.DrawRay(cob, GetBlockBuoyancy(index, gravity) * forceScale);
 
                 Gizmos.color = Color.red;
-                Gizmos.DrawRay(cob, -transform.TransformVector(blockLocalForceList[index]) * forceScale * depth / length);
+                Gizmos.DrawRay(cob, -transform.TransformVector(blockLocalForceList[index]) * forceScale);
 
                 Gizmos.color = Color.blue;
                 Gizmos.DrawRay(cob, velocity + Vector3.Cross(angularVelocity, cob - centerOfMass));

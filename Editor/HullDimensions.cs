@@ -1,6 +1,6 @@
 using UnityEngine;
 /*
-namespace USS
+namespace USS2
 {
     public class HullDimensions
     {

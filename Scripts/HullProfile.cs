@@ -6,7 +6,7 @@ using UnityEngine;
 using UdonSharpEditor;
 #endif
 
-namespace USS
+namespace USS2
 {
     /// <summary>
     /// Descrive static hull shape.

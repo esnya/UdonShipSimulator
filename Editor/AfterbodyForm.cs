@@ -1,4 +1,4 @@
-namespace USS
+namespace USS2
 {
     public enum AfterbodyForm
     {

@@ -35,7 +35,8 @@ namespace UdonShipSimulator
             prevTime = time;
             prevPosition = position;
 
-            textMesh.text = $"{speed:0.0}kt";
+            var heading = Mathf.RoundToInt(Vector3.SignedAngle(Vector3.forward, Vector3.ProjectOnPlane(target.forward, Vector3.up), Vector3.up) + 360) % 360;
+            textMesh.text = $"{speed:F1}kt\n{(heading == 0 ? 360 : heading)}°";
         }
     }
 }

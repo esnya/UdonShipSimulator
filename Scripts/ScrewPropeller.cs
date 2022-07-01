@@ -8,15 +8,15 @@ using UnityEditor;
 using UdonSharpEditor;
 #endif
 
-namespace UdonShipSimulator
+namespace USS2
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class ScrewPropeller : UdonSharpBehaviour
     {
         /// <summary>
-        /// Throttle by 0-1.
+        /// Normalized revolution (Rotation 360 degrees per seconds) by 0-1.
         /// </summary>
-        [Range(-1.0f, 1.0f)] public float throttle = 0.0f;
+        [Range(-1.0f, 1.0f)] public float n = 0.0f;
 
         [Header("Specs")]
 
@@ -52,33 +52,46 @@ namespace UdonShipSimulator
         public float shaftDiameter = 0.2f;
 
         /// <summary>
-        /// Shaft blacket area in square.
+        /// Shaft resistance form factor.
         /// </summary>
-        public float shaftBlacketArea = 5.0f;
+        [Range(2.0f, 4.0f)] public float shaftRegistanceFactor = 2.0f;
 
-        /// <summary>
-        /// Area of rudder surface. Readonly.
-        /// </summary>
-        [NonSerialized] public float surface;
+
+        [NonSerialized] public float appendageResistanceFactor;
+        [NonSerialized] public float surfaceArea;
         private Rigidbody vesselRigidbody;
-        private Transform vesselTransform;
-        private float localThrustForce;
+        private float localForce;
+        private float seaLevel;
 
         private void Start()
         {
             vesselRigidbody = GetComponentInParent<Rigidbody>();
-            vesselTransform = vesselRigidbody.transform;
+
+            var ocean = vesselRigidbody.GetComponentInParent<Ocean>();
+            if (ocean)
+            {
+                seaLevel = ocean.transform.position.y;
+            }
+
+            surfaceArea = Mathf.PI * shaftDiameter * shaftLength;
+            appendageResistanceFactor = shaftRegistanceFactor;
         }
 
         private void FixedUpdate()
         {
-            vesselRigidbody.AddForceAtPosition(transform.forward * localThrustForce, transform.position);
+            vesselRigidbody.AddForceAtPosition(transform.forward * localForce, transform.position);
         }
 
         private void Update()
         {
+            if (transform.position.y > seaLevel)
+            {
+                localForce = 0.0f;
+                return;
+            }
+
             var speed = Vector3.Dot(vesselRigidbody.velocity, transform.forward);
-            localThrustForce = (throttle > 0.0f ? efficiency : reverseEfficiency) * power * throttle / Mathf.Max(speed, 1.0f);
+            localForce = (n > 0.0f ? efficiency : reverseEfficiency) * power * n / Mathf.Max(speed, 1.0f);
         }
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
@@ -86,11 +99,7 @@ namespace UdonShipSimulator
         {
             this.UpdateProxy();
 
-            if (!vesselRigidbody)
-            {
-                vesselRigidbody = GetComponentInParent<Rigidbody>();
-                vesselTransform = vesselRigidbody.transform;
-            }
+            var vesselRigidbody = GetComponentInParent<Rigidbody>();
 
             try {
                 Gizmos.matrix = transform.localToWorldMatrix;
@@ -104,9 +113,6 @@ namespace UdonShipSimulator
                 var shaftEnd =  Vector3.forward * shaftLength;
                 Gizmos.DrawWireSphere(shaftEnd, shaftDiameter);
                 Gizmos.DrawLine(Vector3.zero, shaftEnd);
-
-                var bracketSize = Mathf.Sqrt(shaftBlacketArea);
-                Gizmos.DrawCube(Vector3.forward * bracketSize * 0.5f, new Vector3(0, bracketSize, bracketSize));
             }
             finally
             {
@@ -116,7 +122,7 @@ namespace UdonShipSimulator
 
             var forceScale = 9.81f / (vesselRigidbody?.mass ?? 1.0f) * 100.0f;
             Gizmos.color = Color.green;
-            Gizmos.DrawRay(transform.position, transform.forward * localThrustForce * forceScale);
+            Gizmos.DrawRay(transform.position, transform.forward * localForce * forceScale);
         }
 #endif
     }

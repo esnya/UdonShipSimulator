@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace USS
+namespace USS2
 {
     /// <summary>
     /// Estimate resistance coefficient of vessel hull by ITTC 1957 formula.

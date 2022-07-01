@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace USS
+namespace USS2
 {
     /// <summary>
     /// Fuild spesification.

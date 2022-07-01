@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
 
-namespace USS
+namespace USS2
 {
     /// <summary>
     /// Gizmos for HullProfile.

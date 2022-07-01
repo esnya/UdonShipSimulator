@@ -2,7 +2,7 @@ using UdonSharpEditor;
 using UnityEditor;
 using UnityEngine;
 
-namespace USS
+namespace USS2
 {
     [CustomEditor(typeof(HullProfile))]
     public class HullProfileEditor : Editor

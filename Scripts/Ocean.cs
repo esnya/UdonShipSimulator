@@ -1,6 +1,6 @@
 using UdonSharp;
 
-namespace USS
+namespace USS2
 {
     /// <summary>
     /// Ocean water spesification.

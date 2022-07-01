@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace USS
+namespace USS2
 {
     /// <summary>
     /// Holtrop-Mennen method to estimate resistance force of vessel's hull.

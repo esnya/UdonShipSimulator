@@ -1,6 +1,5 @@
 ﻿
 using System;
-using JetBrains.Annotations;
 using UdonSharp;
 using UnityEngine;
 
@@ -9,122 +8,141 @@ using UnityEditor;
 using UdonSharpEditor;
 #endif
 
-namespace UdonShipSimulator
+namespace USS2
 {
+    /// <summary>
+    /// Rudder.
+    ///
+    /// 葛湯 西室, 宏彰 直: "規舵に作用する力と船体・プロペラとの干渉" (1983)
+    /// </summary>
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class Rudder : UdonSharpBehaviour
     {
         /// <summary>
-        /// Lift coefficient by attack of angle.
+        /// Length in meters.
         /// </summary>
-        [NotNull] public AnimationCurve cl = AnimationCurve.EaseInOut(0.0f, 0.0f, 30.0f, 10.0f);
+        public float length = 5.0f;
 
         /// <summary>
-        /// Drag coefficient by attack of angle.
+        /// Depth in meters.
         /// </summary>
-        [NotNull] public AnimationCurve cd = AnimationCurve.EaseInOut(0.0f, 0.0f, 90.0f, 10.0f);
+        public float depth = 6.0f;
 
         /// <summary>
-        /// Rudder surface size
+        /// Lift coefficient curve.
         /// </summary>
-        public Vector2 size = new Vector2(4.0f, 5.0f);
+        public float clMax = 0.8f;
 
         /// <summary>
-        /// Rudder max angle
+        /// Angle of attack with max Cl
         /// </summary>
-        [Range(1.3f, 2.0f)] public float formFactor = 1.5f;
+        public float maxAlpha = 12.0f;
 
         /// <summary>
-        /// Water density. ρ
+        /// Curve of lift.
         /// </summary>
-        public float waterDensity = 1025.0f;
+        public float liftCurve = 2.0f;
 
         /// <summary>
-        /// Area of rudder surface. Readonly.
+        /// Resistance factor.
         /// </summary>
-        [NonSerialized] public float surface;
+        [Range(1.3f, 2.0f)] public float appendageResistanceFactor = 1.5f;
+
+        [NonSerialized] public float surfaceArea;
         private float forceMultiplier;
         private Rigidbody vesselRigidbody;
-        private Transform vesselTransform;
-        private Vector3 localDragForce;
+        private float rho = Ocean.OceanRho;
+        private float seaLevel;
+        private Vector3 localForce;
 
         private void Start()
         {
             vesselRigidbody = GetComponentInParent<Rigidbody>();
-            vesselTransform = vesselRigidbody.transform;
 
-            surface = size.x * size.y;
-            forceMultiplier = 0.5f * waterDensity * surface;
+
+            var ocean = vesselRigidbody.GetComponentInParent<Ocean>();
+            if (ocean)
+            {
+                rho = ocean.rho;
+                seaLevel = ocean.transform.position.y;
+            }
+
+            surfaceArea = length * depth;
+            forceMultiplier = 0.5f * rho * surfaceArea * GetCfnArFactor();
         }
 
         private void FixedUpdate()
         {
-            vesselRigidbody.AddForceAtPosition(transform.TransformVector(localDragForce), transform.position);
+            vesselRigidbody.AddForceAtPosition(transform.TransformVector(localForce), transform.position);
         }
 
         private void Update()
         {
-            localDragForce = GetLocalDragForce();
+            if (transform.position.y > seaLevel)
+            {
+                localForce = Vector3.zero;
+                return;
+            }
+
+            var localVelocity2D = GetLocalVelocity2D();
+            var speed = localVelocity2D.magnitude;
+            localForce = Vector3.left * (Mathf.Pow(speed, 2.0f) * localVelocity2D.normalized.x * forceMultiplier);
+
+            // if (float.IsNaN(localForce.x))
+            // {
+            //     Debug.Log($"{localVelocity2D}, {localForce}, {forceMultiplier}", this);
+            // }
         }
 
-        private Vector3 GetLocalDragForce()
+        private Vector3 GetLocalVelocity2D()
         {
             var centerOfMass = vesselRigidbody.worldCenterOfMass;
-            var rudderPosition = transform.position;
-
-            var forward = transform.forward;
-            var right = transform.right;
-            var up = transform.up;
-
-            var velocity = vesselRigidbody.velocity + Vector3.Cross(vesselRigidbody.angularVelocity, rudderPosition - centerOfMass);
-            var xzVelocity = Vector3.ProjectOnPlane(velocity, up);
-
-
-            var speed_2 = xzVelocity.sqrMagnitude;
-            var signedAngle = Vector3.SignedAngle(forward, Vector3.ProjectOnPlane(xzVelocity, up), up);
-            var angleOfAttack = GetAngleOfAttack(signedAngle);
-            var absAoA = Mathf.Abs(angleOfAttack);
-            var aoaSign = Mathf.Sign(angleOfAttack);
-
-            return Quaternion.FromToRotation(forward, vesselTransform.forward) * (Vector3.left * cl.Evaluate(absAoA) - Vector3.forward * cd.Evaluate(absAoA)) * aoaSign * speed_2 * forceMultiplier;
+            var centerOfLift = transform.position;
+            var velocity = vesselRigidbody.velocity + Vector3.Cross(vesselRigidbody.angularVelocity, centerOfLift - centerOfMass);
+            var localVelocity = transform.InverseTransformDirection(velocity);
+            return Vector3.ProjectOnPlane(localVelocity, Vector3.up);
         }
 
-        private float GetAngleOfAttack(float signedAngle)
+        private float GetAlpha(Vector3 localVelocity2D)
         {
-            return signedAngle <= 90.0f ? signedAngle : 180.0f - signedAngle;
+            var angle = Mathf.Abs(Vector3.SignedAngle(Vector3.forward, localVelocity2D, Vector3.up));
+            return angle <= 90.0f ? angle : (180.0f - angle);
         }
 
+        private float GetCfnArFactor()
+        {
+            var ar = depth / length;
+            return 6.13f * ar / (ar + 2.25f);
+        }
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            this.UpdateProxy();
-
-            if (!vesselRigidbody)
+            try
             {
-                vesselRigidbody = GetComponentInParent<Rigidbody>();
-                vesselTransform = vesselRigidbody.transform;
-            }
+                this.UpdateProxy();
 
-            var forceScale = 9.81f / (vesselRigidbody?.mass ?? 1.0f) * 100.0f;
-            try {
-                Gizmos.matrix = transform.localToWorldMatrix;
+                if (!vesselRigidbody) vesselRigidbody = GetComponentInParent<Rigidbody>();
+                var forceScale = SceneView.currentDrawingSceneView.size * 9.81f / (vesselRigidbody?.mass ?? 1.0f);
 
-                Gizmos.color = Color.white;
-                Gizmos.DrawCube(Vector3.zero, new Vector3(0.0f, size.y, size.x));
+                Handles.matrix = Gizmos.matrix = transform.localToWorldMatrix;
+
+                var localVelocity2D = GetLocalVelocity2D();
+                Gizmos.color = Color.blue;
+                Gizmos.DrawRay(Vector3.zero, localVelocity2D);
+
+                var alpha = GetAlpha(localVelocity2D);
+                var alphaAbs = Mathf.Abs(alpha);
+                Handles.color = Gizmos.color = alphaAbs <= maxAlpha ? Color.Lerp(Color.white, Color.green, alphaAbs / maxAlpha) : Color.Lerp(Color.green, Color.red, (alphaAbs - maxAlpha) / maxAlpha);
+                Handles.Label(Vector3.zero, $"α: {alpha:F2}°");
+                Gizmos.DrawWireCube(Vector3.zero, new Vector3(0.0f, depth, length));
+
+                Gizmos.color = Color.green;
+                Gizmos.DrawRay(Vector3.zero, localForce * forceScale);
             }
             finally
             {
-                Gizmos.matrix = Matrix4x4.identity;
+                Handles.matrix = Gizmos.matrix = Matrix4x4.identity;
             }
-
-            var worldDragForce = transform.TransformVector(localDragForce);
-            Gizmos.color = Color.green;
-            Gizmos.DrawRay(transform.position, Vector3.Project(worldDragForce, vesselTransform.right) * forceScale);
-
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(transform.position, Vector3.Project(worldDragForce, vesselTransform.forward) * forceScale);
-
-            Gizmos.color = Color.white;
         }
 #endif
     }

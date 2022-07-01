@@ -6,19 +6,21 @@ using UnityEditor;
 using UnityEngine;
 using VRC.Udon;
 
-namespace USS
+namespace USS2
 {
     [CustomEditor(typeof(Hull))]
     public class HullEditor : Editor
     {
-        public enum SpeedUnit {
+        public enum SpeedUnit
+        {
             MeterPerSecond,
             Knot,
         }
 
         private static int gizmoSubdivisions = 4;
-        private static float v = 0.5f;
         private int speedUnit = (int)SpeedUnit.Knot;
+
+        private static bool blockGizmos = false;
 
         private AnimationCurve midshipSectionAreaByDraughtProfile;
         private AnimationCurve waterplaneAreaByDraughtProfile;
@@ -27,10 +29,6 @@ namespace USS
         private Ocean ocean;
         private AnimationCurve surfaceAreaByDraughtProfile;
         private AnimationCurve volumeByDraughtProfile;
-        private AnimationCurve crossSectionAreaByDraughtProfile;
-        private AnimationCurve crossSectionArcByDraughtProfile;
-        private AnimationCurve crossSectionDepthProfile;
-        private AnimationCurve crossSectionBeamByDraughtProfile;
         static private Vector2Int block;
         private AnimationCurve blockSurfaceProfile;
         private AnimationCurve blockVolumeProfile;
@@ -55,7 +53,7 @@ namespace USS
 
         private static float GetDraught(Hull hull, Ocean ocean)
         {
-            return Mathf.Clamp((ocean? ocean.transform.position.y : 0.0f) - (hull.transform.position.y - hull.transform.up.y * hull.depth), 0, hull.depth);
+            return Mathf.Clamp((ocean ? ocean.transform.position.y : 0.0f) - (hull.transform.position.y - hull.transform.up.y * hull.depth), 0, hull.depth);
         }
 
         private void OnEnable()
@@ -90,17 +88,8 @@ namespace USS
             sumOfBlockSurfaceProfile = new AnimationCurve(draughts.Select(d => new Keyframe(d, blockSurfaceProfiles.Sum(p => p.Evaluate(d)) * 2.0f)).ToArray());
             sumOfBlockVolumeProfile = new AnimationCurve(draughts.Select(d => new Keyframe(d, blockVolumeProfiles.Sum(p => p.Evaluate(d)) * 2.0f)).ToArray());
 
-            UpdateCrossSectionProfiles(hull);
             UpdateResistanceProfiles(hull);
             UpdateBlockProfile(hull);
-        }
-
-        private void UpdateCrossSectionProfiles(Hull hull)
-        {
-            crossSectionAreaByDraughtProfile = hull.GetCrossSectionAreaByDraughtProfile(v);
-            crossSectionArcByDraughtProfile = hull.GetCrossSectionArcByDraughtProfileAt(v);
-            crossSectionDepthProfile = hull.GetCrossSectionDepthProfileAt(v);
-            crossSectionBeamByDraughtProfile = hull.GetCrossSectionBeamByDraughtProfileAt(v);
         }
 
         private void UpdateResistanceProfiles(Hull hull)
@@ -151,7 +140,7 @@ namespace USS
                     var rapp = 0.0f; // ToDo
 
                     var fn = h.GetFn(v, g);
-                    var rw = HoltropMennen.GetRW(fluid, h, g, v, at, hb, abt, tf,lcb);
+                    var rw = HoltropMennen.GetRW(fluid, h, g, v, at, hb, abt, tf, lcb);
 
                     var rb = 0.0f; // ToDo
                     var rtr = 0.0f; // ToDo
@@ -253,7 +242,8 @@ namespace USS
                 EditorGUILayout.LabelField("▽", $"{volume:F2}㎥");
 
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("S", $"{surfaceAreaByDraughtProfile.Evaluate(draught):F2}㎡");
+                var surfaceArea = surfaceAreaByDraughtProfile.Evaluate(draught);
+                EditorGUILayout.LabelField("S", $"{surfaceArea:F2}㎡");
                 EditorGUILayout.LabelField("S (estimated)", $"{HoltropMennen.GetS(h, abt):F2}㎡");
                 EditorGUILayout.LabelField("AM", $"{h.am}㎡");
                 EditorGUILayout.LabelField("AW", $"{h.aw}㎡");
@@ -277,34 +267,6 @@ namespace USS
 
                 EditorGUILayout.Space();
 
-                using (var change = new EditorGUI.ChangeCheckScope())
-                {
-                    v = EditorGUILayout.Slider("Cross Section", v, 0.0f, 1.0f);
-                    if (change.changed) UpdateCrossSectionProfiles(hull);
-                }
-
-                var crossSectionBeam = crossSectionBeamByDraughtProfile.Evaluate(draught);
-                EditorGUILayout.LabelField("Breadth", $"{crossSectionBeam:F2}m");
-                EditorGUILayout.LabelField("Arc Length", $"{crossSectionArcByDraughtProfile.Evaluate(draught):F2}m");
-
-                var crossSectionArea = crossSectionAreaByDraughtProfile.Evaluate(draught);
-                EditorGUILayout.LabelField("Area", $"{crossSectionArea:F2}㎡");
-                EditorGUILayout.LabelField("CB'", $"{crossSectionArea / (crossSectionBeam * draught):F2}");
-
-                EditorGUILayout.CurveField("Depth by U", crossSectionDepthProfile);
-
-                EditorGUILayout.LabelField("by Draught Profiles", EditorStyles.boldLabel);
-                EditorGUILayout.CurveField("Breadth", crossSectionBeamByDraughtProfile);
-                EditorGUILayout.CurveField("Arc Length", crossSectionArcByDraughtProfile);
-                EditorGUILayout.CurveField("Area", crossSectionAreaByDraughtProfile);
-
-                EditorGUILayout.Space();
-
-                var formFactor = hull.GetFormFactor();
-                EditorGUILayout.LabelField("Form Factor (1 + k)", $"{formFactor.x:F2}, {formFactor.y:F2}, {formFactor.z:F2}");
-
-                EditorGUILayout.Space();
-
                 EditorGUILayout.LabelField("Registance Profile", EditorStyles.boldLabel);
                 var speedMultiplier = GetSpeedMultiplier((SpeedUnit)speedUnit);
                 using (var change = new EditorGUI.ChangeCheckScope())
@@ -313,7 +275,7 @@ namespace USS
                     if (change.changed) UpdateResistanceProfiles(hull);
                 }
                 speed = EditorGUILayout.Slider("Speed", speed / speedMultiplier, 0.0f, maxSpeed / speedMultiplier) * speedMultiplier;
-                speedUnit = EditorGUILayout.Popup("Unit", speedUnit, new [] { "MKS", "Knot"});
+                speedUnit = EditorGUILayout.Popup("Unit", speedUnit, new[] { "MKS", "Knot" });
 
                 EditorGUILayout.LabelField("Total", $"{rtz.Evaluate(speed) / 1000.0f:F2}kN");
                 EditorGUILayout.LabelField("Frictional", $"{rfz.Evaluate(speed) / 1000.0f:F2}kN");
@@ -326,40 +288,88 @@ namespace USS
                 EditorGUILayout.CurveField("RT vs Fn", rtfnz);
                 EditorGUILayout.CurveField("CT vs Fn", ctfnz);
 
+                var g = Physics.gravity.magnitude;
+
+                EditorGUILayout.Space();
+                var speeds = Enumerable.Range(0, hull.curveProfilingSteps).Select(i => (i + 0.5f) / hull.curveProfilingSteps * maxSpeed);
+                EditorGUILayout.CurveField(speeds.Select(v =>
+                {
+                    var fn = hull.GetFn(hull.length, v, g);
+                    var value = hull.GetCF(hull.GetRn(Ocean.OceanRho, Ocean.OceanMu, hull.length, volume));
+                    return (fn, value);
+                }).ToAnimationCorve().TangentSmoothed(1.0f));
+                EditorGUILayout.CurveField(speeds.Select(v =>
+                {
+                    var fn = hull.GetFn(hull.length, v, g);
+                    var lcb = 0.0f;
+                    var at = 0.0f;
+                    var tf = draught;
+                    var hb = tf / 2.0f;
+                    var value = hull.GetCW(1025.0f, surfaceArea, volume, cp, cm, cw, fn, g, v, at, hb, 0.0f, tf, lcb);
+                    return (fn, value);
+                }).ToAnimationCorve().TangentSmoothed(1.0f));
+                EditorGUILayout.CurveField(speeds.Select(v =>
+                {
+                    var fn = hull.GetFn(hull.length, v, g);
+                    var lcb = 0.0f;
+                    var at = 0.0f;
+                    var tf = draught;
+                    var hb = tf / 2.0f;
+                    var f = hull.GetCF(hull.GetRn(Ocean.OceanRho, Ocean.OceanMu, hull.length, volume));
+                    var w = hull.GetCW(1025.0f, surfaceArea, volume, cp, cm, cw, fn, g, v, at, hb, 0.0f, tf, lcb);
+                    var k1 = hull.GetK1(cp, lcb);
+                    return (fn, f * (1 + k1) + w);
+                }).ToAnimationCorve().TangentSmoothed(1.0f));
+
+                EditorGUILayout.CurveField(speeds.Select(v =>
+                {
+                    var fn = hull.GetFn(hull.length, v, g);
+                    var value = hull.GetCT(hull.length, v, cp, cm, cw, g, volume, surfaceArea);
+                    return (fn, value);
+                }).ToAnimationCorve().TangentSmoothed(1.0f));
+                EditorGUILayout.CurveField(hull.GetForwardCTProfile(maxSpeed));
                 EditorGUILayout.Space();
 
                 EditorGUILayout.LabelField("Pre Calculated Ct Profiles", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Forward", $"{forwardCTProfile.Evaluate(speed):F2}");
                 EditorGUILayout.CurveField("Forward", forwardCTProfile);
+                EditorGUILayout.LabelField("Side", $"{forwardCTProfile.Evaluate(speed):F2}");
                 EditorGUILayout.CurveField("Side", sideCTProfile);
+                EditorGUILayout.LabelField("Vertical", $"{forwardCTProfile.Evaluate(speed):F2}");
                 EditorGUILayout.CurveField("Vertical", verticalCTProfile);
 
                 EditorGUILayout.LabelField("Pre Calculated Rt Profiles", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("Forward", $"{forwardRTProfile.Evaluate(speed):F2}N");
                 EditorGUILayout.CurveField("Forward", forwardRTProfile);
+                EditorGUILayout.LabelField("Side", $"{sideRTProfile.Evaluate(speed):F2}N");
                 EditorGUILayout.CurveField("Side", sideRTProfile);
+                EditorGUILayout.LabelField("Vertical", $"{verticalRTProfile.Evaluate(speed):F2}N");
                 EditorGUILayout.CurveField("Vertical", verticalRTProfile);
 
                 EditorGUILayout.Space();
 
-                EditorGUILayout.LabelField("Simulation Block Specs", EditorStyles.boldLabel);
-                using (var change = new EditorGUI.ChangeCheckScope())
+                if (blockGizmos = EditorGUILayout.Foldout(blockGizmos, "Simulation Block Specs"))
                 {
-                    block.x = EditorGUILayout.IntSlider("Lat", block.x, 0, hull.beamSteps - 1);
-                    block.y = EditorGUILayout.IntSlider("Lon", block.y, 0, hull.lengthSteps - 1);
-                    if (change.changed) UpdateBlockProfile(hull);
+                    using (var change = new EditorGUI.ChangeCheckScope())
+                    {
+                        block.x = EditorGUILayout.IntSlider("Lat", block.x, 0, hull.beamSteps - 1);
+                        block.y = EditorGUILayout.IntSlider("Lon", block.y, 0, hull.lengthSteps - 1);
+                        if (change.changed) UpdateBlockProfile(hull);
+                    }
+
+                    var blockVolume = blockVolumeProfile.Evaluate(draught);
+                    var blockSurface = blockSurfaceProfile.Evaluate(draught);
+
+                    EditorGUILayout.LabelField("Surface", $"{blockSurface:F2}㎡");
+                    EditorGUILayout.LabelField("Volume", $"{blockVolume:F2}㎥");
+                    EditorGUILayout.CurveField("Surface by Draught", blockSurfaceProfile);
+                    EditorGUILayout.CurveField("Volume by Draught", blockVolumeProfile);
+
+                    EditorGUILayout.Space();
+
+                    EditorGUILayout.LabelField("ΣSurface", $"{sumOfBlockSurfaceProfile.Evaluate(draught):F2}㎡");
+                    EditorGUILayout.LabelField("ΣVolume", $"{sumOfBlockVolumeProfile.Evaluate(draught):F2}㎡");
                 }
-
-                var blockVolume = blockVolumeProfile.Evaluate(draught);
-                var blockSurface = blockSurfaceProfile.Evaluate(draught);
-
-                EditorGUILayout.LabelField("Surface", $"{blockSurface:F2}㎡");
-                EditorGUILayout.LabelField("Volume", $"{blockVolume:F2}㎥");
-                EditorGUILayout.CurveField("Surface by Draught", blockSurfaceProfile);
-                EditorGUILayout.CurveField("Volume by Draught", blockVolumeProfile);
-
-                EditorGUILayout.Space();
-
-                EditorGUILayout.LabelField("ΣSurface", $"{sumOfBlockSurfaceProfile.Evaluate(draught):F2}㎡");
-                EditorGUILayout.LabelField("ΣVolume", $"{sumOfBlockVolumeProfile.Evaluate(draught):F2}㎡");
 
                 gizmoSubdivisions = EditorGUILayout.IntSlider("Gizmo Subdivisions", gizmoSubdivisions, 1, 64);
             }
@@ -380,7 +390,7 @@ namespace USS
             return float.NaN;
         }
 
-        [DrawGizmo(GizmoType.Selected | GizmoType.Active | GizmoType.InSelectionHierarchy, typeof(UdonBehaviour))]
+        [DrawGizmo(GizmoType.InSelectionHierarchy, typeof(UdonBehaviour))]
         static void OnDrawEditorGizmos(UdonBehaviour udon, GizmoType gizmoType)
         {
             if (UdonSharpEditorUtility.GetUdonSharpBehaviourType(udon) != typeof(Hull)) return;
@@ -393,8 +403,8 @@ namespace USS
 
                 DrawHullGizmos(hull);
                 DrawDraughtGizmos(hull, ocean);
-                DrawCrossSectionGizmos(hull, ocean);
-                DrawBlockGizmos(hull);
+
+                if (blockGizmos) DrawBlockGizmos(hull);
             }
             finally
             {
@@ -439,33 +449,6 @@ namespace USS
 
         }
 
-        private static void DrawCrossSectionGizmos(Hull hull, Ocean ocean)
-        {
-            var gizmoLengthSteps = hull.lengthSteps * gizmoSubdivisions;
-            var gizmoBeamSteps = hull.beamSteps * gizmoSubdivisions;
-
-            var draught = GetDraught(hull, ocean);
-            var csp = Vector3.back * hull.length * (v - 0.5f);
-
-            Gizmos.color = Color.yellow;
-            DrawWireCubeWithDiagonals(csp + Vector3.down * (hull.depth - draught * 0.5f), Vector3.right * hull.beam + Vector3.up * draught);
-
-            Gizmos.color = Color.red;
-            var depthProfile = hull.GetCrossSectionDepthProfileAt(v);
-            var beamProfile = hull.GetCrossSectionBodyProfileAt(v);
-            var hullCrossSectionPoints = Enumerable.Range(0, gizmoBeamSteps)
-                .Select(n => (float)n / gizmoBeamSteps)
-                .Append(1.0f)
-                .Select(u => csp + Vector3.right * beamProfile.Evaluate(u) * 0.5f + Vector3.down * depthProfile.Evaluate(u))
-                .ToArray();
-            DrawLineStrip(hullCrossSectionPoints);
-            DrawLineStrip(hullCrossSectionPoints.Select(p => Vector3.Scale(p, Vector3.one - Vector3.right * 2.0f)));
-
-            var crossSectionArea = hull.GetCrossSectionAreaByDraughtProfile(v).Evaluate(draught);
-            Handles.color = Color.white;
-            Handles.Label(csp + Vector3.down * (hull.depth - draught * 0.5f), $"{crossSectionArea:F2}㎡");
-        }
-
         private static void DrawDraughtGizmos(Hull hull, Ocean ocean)
         {
             if (EditorApplication.isPlaying) return;
@@ -496,10 +479,12 @@ namespace USS
                     var p2 = hull.transform.TransformPoint(b2);
                     var d1 = Mathf.Clamp((ocean?.transform.position.y ?? 0.0f) - p1.y, 0.0f, -b1.y);
                     var d2 = Mathf.Clamp((ocean?.transform.position.y ?? 0.0f) - p2.y, 0.0f, -b2.y);
-                    // var v = d * dl * blockSizes[index];
 
-                    DrawWireCubeWithDiagonals(b1 + Vector3.up * d1 * 0.5f, Vector3.right * blockWidth + Vector3.up * d1 + Vector3.forward * hull.length / hull.lengthSteps);
-                    DrawWireCubeWithDiagonals(b2 + Vector3.up * d2 * 0.5f, Vector3.right * blockWidth + Vector3.up * d2 + Vector3.forward * hull.length / hull.lengthSteps);
+                    if (blockGizmos)
+                    {
+                        DrawWireCubeWithDiagonals(b1 + Vector3.up * d1 * 0.5f, Vector3.right * blockWidth + Vector3.up * d1 + Vector3.forward * hull.length / hull.lengthSteps);
+                        DrawWireCubeWithDiagonals(b2 + Vector3.up * d2 * 0.5f, Vector3.right * blockWidth + Vector3.up * d2 + Vector3.forward * hull.length / hull.lengthSteps);
+                    }
                 }
             }
         }
