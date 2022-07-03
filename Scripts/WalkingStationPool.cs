@@ -1,14 +1,6 @@
-using UdonSharp;
-using UdonToolkit;
-using UnityEngine;
-using VRC.SDK3.Components;
-using VRC.SDKBase;
 using System;
-
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using System.Linq;
-using UdonSharpEditor;
-#endif
+using UdonSharp;
+using VRC.SDKBase;
 
 namespace USS2
 {
@@ -56,6 +48,11 @@ namespace USS2
             StationActiveFlags = StationActiveFlags;
         }
 
+        public override void Interact()
+        {
+            _EnterStation();
+        }
+
         public void _TakeOwnership()
         {
             if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
@@ -98,13 +95,5 @@ namespace USS2
         {
             return Array.IndexOf(walkingStations, walkingStation);
         }
-
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-        [Button("Setup Object Pool", true)]
-        public void Setup()
-        {
-            GetComponent<VRCObjectPool>().Pool = this.GetUdonSharpComponentsInChildren<WalkingStation>().Select(s => s.gameObject).ToArray();
-        }
-#endif
     }
 }
