@@ -11,7 +11,7 @@ using UdonSharpEditor;
 
 namespace USS2
 {
-    [DefaultExecutionOrder(100)] // After Appendages
+    [DefaultExecutionOrder(200)] // After Appendages
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class Hull : UdonSharpBehaviour
     {
@@ -99,9 +99,9 @@ namespace USS2
                     var blockLocalVelocity = transform.InverseTransformVector(velocity + Vector3.Cross(angularVelocity, centerOfBuoyancy - centerOfMass));
 
                     blockLocalForceList[index] =
-                        Vector3.forward * GetResistanceForce(forwardCTProfile.Evaluate(GetFn(length, Mathf.Abs(blockLocalVelocity.z), g)), rho, s, blockLocalVelocity.z)
-                        + Vector3.right * GetResistanceForce(sideCTProfile.Evaluate(GetFn(beam, Mathf.Abs(blockLocalVelocity.x), g)), rho, s, blockLocalVelocity.x)
-                        + Vector3.up * GetResistanceForce(verticalCTProfile.Evaluate(GetFn(d, Mathf.Abs(blockLocalVelocity.y), g)), rho, s, blockLocalVelocity.y);
+                        Vector3.forward * EvaluateRegistanceForce(forwardCTProfile, length, s, blockLocalVelocity.z, g)
+                        + Vector3.right * EvaluateRegistanceForce(sideCTProfile, beam, s, blockLocalVelocity.x, g)
+                        + Vector3.up * EvaluateRegistanceForce(verticalCTProfile, d, s, blockLocalVelocity.y, g);
                     if (float.IsNaN(blockLocalForceList[index].x))
                     {
                         Debug.Log($"[{vesselRigidbody.gameObject.name}][{index}] f={blockLocalForceList[index]}, b={bottomPoint}, p={p}, d={d}, v={v}, s={s}");
@@ -169,16 +169,21 @@ namespace USS2
             forwardCTProfile = GetSideCTProfile(maxSpeed);
             sideCTProfile = GetForwardCTProfile(maxSpeed);
             verticalCTProfile = GetVerticalCTProfile(maxSpeed);
+
+            foreach (var screwPropeller in vesselRigidbody.GetComponentsInChildren<ScrewPropeller>())
+            {
+                screwPropeller.etaH = GetScrewPropellerHullEfficiency(maxSpeed, screwPropeller.diameter);
+                screwPropeller.etaR = GetRelativeRotativeEfficiency(screwPropeller.pitch, screwPropeller.diameter);
+            }
         }
 
         private UdonSharpBehaviour[] GetAppendages()
         {
             var hullAppendages = vesselRigidbody.GetComponentsInChildren<HullAppendage>();
             var rudders = vesselRigidbody.GetComponentsInChildren<Rudder>();
-            var screwPropellers = vesselRigidbody.GetComponentsInChildren<ScrewPropeller>();
             var bildgeKeels = vesselRigidbody.GetComponentsInChildren<BilgeKeel>();
 
-            var appendages = new UdonSharpBehaviour[hullAppendages.Length + rudders.Length + screwPropellers.Length + bildgeKeels.Length];
+            var appendages = new UdonSharpBehaviour[hullAppendages.Length + rudders.Length + bildgeKeels.Length];
             var i = 0;
 
             Array.Copy(hullAppendages, 0, appendages, i, hullAppendages.Length);
@@ -186,9 +191,6 @@ namespace USS2
 
             Array.Copy(rudders, 0, appendages, i, rudders.Length);
             i += rudders.Length;
-
-            Array.Copy(screwPropellers, 0, appendages, i, screwPropellers.Length);
-            i += screwPropellers.Length;
 
             Array.Copy(bildgeKeels, 0, appendages, i, bildgeKeels.Length);
             // i += bildgeKeels.Length;
@@ -581,6 +583,14 @@ namespace USS2
             for (var i = 0; i < curve.length; i++) curve.SmoothTangents(i, weight);
         }
 
+        public float EvaluateRegistanceForce(AnimationCurve crProfile, float l, float s, float v, float g)
+        {
+            var absV = Mathf.Abs(v);
+            var fn = GetFn(l, absV, g);
+            var cr = crProfile.Evaluate(fn);
+            return 0.5f * rho * Mathf.Pow(absV, 2.0f) * s * cr * Mathf.Sign(v);
+        }
+
         #region Fluid Utilities
         public float GetRn(float rho, float mu, float l, float v)
         {
@@ -627,7 +637,7 @@ namespace USS2
             return c13 * (0.93f + c12 * Mathf.Pow(beam / lr, 0.92497f) * Mathf.Pow(0.95f - cp, -0.521448f) * Mathf.Pow(1 - cp + 0.0225f * lcb, 0.6906f)) - 1.0f;
         }
 
-        public float GetCW(float rho, float s, float volume, float cp, float cm, float cw, float fn, float g, float v, float at, float hb, float abt, float tf, float lcb)
+        public float GetCW(float s, float volume, float cp, float cm, float cw, float fn, float g, float v, float at, float hb, float abt, float tf, float lcb)
         {
             var t = depth;
             var l = length;
@@ -682,7 +692,7 @@ namespace USS2
             var tf = designedDraught;
             var hb = tf / 2.0f;
             var f = GetCF(GetRn(rho, mu, l, volume));
-            var w = GetCW(rho, surface, volume, cp, cm, cw, fn, g, v, at, hb, 0.0f, tf, lcb);
+            var w = GetCW(surface, volume, cp, cm, cw, fn, g, v, at, hb, 0.0f, tf, lcb);
             var k1 = GetK1(cp, lcb);
             return f * (1 + k1) + w;
         }
@@ -736,6 +746,48 @@ namespace USS2
             var cm = GetWaterplaneAreaByDraughtProfile().Evaluate(designedDraught) / (beam * GetWaterLineLengthByDraughtProfile().Evaluate(designedDraught));
             var cw = cm;
             return GetCTProfile(length, maxSpeed, cm, cw);
+        }
+
+        public AnimationCurve GetScrewPropellerHullEfficiency(float maxSpeed, float d)
+        {
+            var result = CreateAnimationCurve();
+
+            var volume = GetVolume(designedDraught);
+            var surface = GetSurfaceAreaByDraughtProfile().Evaluate(designedDraught);
+            var cb = GetVolume(depth) / (beam * length * designedDraught);
+            var am = GetCrossSectionAreaByDraughtProfile(0.5f).Evaluate(designedDraught);
+            var cp = volume / (length * am);
+            var ca = 0.0f;
+            var lcb = 0.0f;
+            var k = GetK1(cp, lcb);
+
+            for (var i = 0; i < curveProfilingSteps; i++)
+            {
+                var v = (i + 0.5f) / curveProfilingSteps * maxSpeed;
+
+                var rn = GetRn(rho, mu, length, v);
+                var cf = GetCF(rn);
+                var cv = (1 + k) * cf + ca;
+
+                var w = 0.3905f * cb + 0.03905f * cv * cb - 0.1f;
+                var t = 0.325f * cb - 0.1885f * d / Mathf.Sqrt(beam * designedDraught);
+
+                var etaH = (1.0f - t) / (1.0f - w);
+                result.AddKey(v, etaH);
+            }
+
+            CurveSmoothTangents(result, 0.0f);
+
+            return result;
+        }
+
+        public float GetRelativeRotativeEfficiency(float p, float d)
+        {
+            var volume = GetVolume(designedDraught);
+            var am = GetCrossSectionAreaByDraughtProfile(0.5f).Evaluate(designedDraught);
+            var cp = volume / (length * am);
+            var lcb = 0.0f;
+            return 0.9737f + 0.111f * (cp - 0.0225f * lcb) - 0.0635f * p / d;
         }
         #endregion
 

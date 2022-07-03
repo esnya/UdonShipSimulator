@@ -1,11 +1,6 @@
-using System.Threading;
 using TMPro;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
-using VRC.SDK3.Components;
-using VRC.SDKBase;
-using VRC.Udon.Common.Interfaces;
 
 namespace UdonShipSimulator
 {
@@ -19,15 +14,19 @@ namespace UdonShipSimulator
         private Vector3 prevPosition;
         private float prevTime;
         private TextMeshPro textMesh;
+        private int updateOffset;
+
         private void Start()
         {
             if (target == null) target = transform;
             textMesh = GetComponent<TextMeshPro>();
+
+            updateOffset = UnityEngine.Random.Range(0, updateInterval);
         }
 
         private void Update()
         {
-            if (Time.frameCount % updateInterval != 0) return;
+            if ((Time.renderedFrameCount + updateOffset) % updateInterval != 0) return;
 
             var time = Time.time;
             var position = target.position;

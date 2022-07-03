@@ -225,5 +225,122 @@ namespace USS2
         {
             return h.hasBulbousBow ? Mathf.PI * Mathf.Pow(tf / 2.0f, 2.0f) / 7.7f : 0.0f;
         }
+
+        public static float GetCv(float k, float cf, float ca)
+        {
+            return (1 + k) * cf + ca;
+        }
+
+        public static float GetCP1(HullDimension h, HullAttitude ha)
+        {
+            return 1.45f * h.CP * 0.315f - 0.0225f * ha.lcb;
+        }
+
+        public static float GetSinglePropellerW(
+            HullDimension h,
+            HullAttitude ha,
+            PropellerDimension p,
+            float gamma,
+            float ta,
+            float s, float k,
+            float cf, float ca
+        )
+        {
+            var cp = h.CP;
+            var cb = h.CB;
+            var cs = GetCS(h.afterbodyForm);
+
+            var b_ta = h.b / ta;
+            var ta_d = ta / p.d;
+
+            var c8 = b_ta < 5.0f ? h.b * s / (h.l * p.d * ta) : s * (gamma * b_ta - 25.0f) / (h.l * p.d * (b_ta - 3.0f));
+            var c9 = c8 < 28.0f ? c8 : 32.0f - 16.0f / (c8 - 24);
+            var c11 = ta_d < 2.0f ? ta_d : 0.0833333f * Mathf.Pow(ta_d, 3.0f) + 1.33333f;
+            var cv = GetCv(k, cf, ca);
+            var cp1 = GetCP1(h, ha);
+
+            return c9 * cv * h.l / ta * (0.0661875f + 1.21756f * c11 * cv / (1.0f - cp1)) + 0.24558f * Mathf.Sqrt(h.b / (h.l * (1 - cp1))) - 0.09726f / (0.95f - cp) + 0.11434f / (0.95f - cb) + 0.75f * cs * cv + 0.002f * cs;
+        }
+
+        public static float GetSlenderSingleScrewT(HullDimension h, HullAttitude ha, PropellerDimension p)
+        {
+            var cs = GetCS(h.afterbodyForm);
+            var lb = h.l / h.b;
+            var cp1 = GetCP1(h, ha);
+            var c10 = lb > 5.2f ? h.b / h.l : 0.25f - 0.003328402f / (h.b / h.l - 0.134615385f);
+            return 0.001979f * h.l / (h.b - h.b * cp1) + 1.0585f * c10 - 0.00524f - 0.1418f * Mathf.Pow(p.d, 2.0f) / (h.b * h.t) + 0.0015f * cs;
+        }
+
+        public static float GetSlenderSingleScrewW(HullDimension h, HullCoefficient hc)
+        {
+            var cb = h.CB;
+            var cv = GetCv(hc.k, hc.cf, hc.ca);
+            return 0.3095f * cb + 10.0f * cv * cb - 0.1f;
+        }
+        public static float GetSlenderSingleScrewEtaR() => 0.98f;
+
+        public static float GetTwinScrewW(HullDimension h, float k, float cf, float ca)
+        {
+            var cb = h.CB;
+            return 0.3905f * cb + 0.03905f * GetCv(k, cf, ca) * cb - 0.1f;
+        }
+
+        public static float GetTwinScrewT(HullDimension h, HullAttitude ha, PropellerDimension p)
+        {
+            return 0.325f * h.CB - 0.1885f * p.d / Mathf.Sqrt(h.b * ha.T);
+        }
+        public static float GetTwinScrewEtaR(HullDimension h, HullAttitude ha, PropellerDimension p)
+        {
+            return 0.9737f + 0.111f * (h.CP - 0.0225f * ha.lcb) - 0.06325f * p.p / p.d;
+        }
+
+        public static float GetEtaR(HullDimension h, PropellerDimension p, float lcb)
+        {
+            return 0.9922f - 0.5908f * p.aeao + 0.07424f * (h.CP - 0.00225f * lcb);
+        }
+
+        public static float GetC075(PropellerDimension p, float t, float pgh)
+        {
+            return 2.073f * p.aeao * (p.d / p.z);;
+        }
+
+        public static float GetDeltaCD(
+            PropellerDimension p,
+            float t,
+            float pgh
+        )
+        {
+            var c075 = GetC075(p, t, pgh);
+            var t_c075 = (0.00185f - 0.00125f * p.z) * p.d / c075;
+            return (2.0f + 4.0f * t_c075) * (0.003605f - Mathf.Pow(1.89f + 1.62f * Mathf.Log(c075 / p.kp), -2.5f));
+        }
+
+        public static float GetEtaS() => 0.99f;
+
+        public static float GetKTs(PropellerDimension p, float ktbs, float deltaCD, float c075)
+        {
+            return ktbs + deltaCD * 0.3f * p.p * c075 * p.z / Mathf.Pow(p.d, 2.0f);
+        }
+
+        public static float GetKQs(PropellerDimension p, float kqbs, float deltaCD, float c075)
+        {
+            return kqbs - deltaCD * 0.25f * c075 * p.z / p.d;
+        }
+
+        public static float GetPs(float pe, float etaR, float etaO, float etaS, float t, float w)
+        {
+            return pe / (etaR * etaO * etaS * (1.0f - t) / (1.0f - w));
+        }
+
+        public static PropellerCoefficient GetTwinScrewPropellerCoeficcient(HullDimension h, HullAttitude ha, HullCoefficient hc, PropellerDimension p)
+        {
+            return new PropellerCoefficient()
+            {
+                w = GetTwinScrewW(h, hc.k, hc.cf, hc.ca),
+                t = GetTwinScrewT(h, ha, p),
+                etaR = GetTwinScrewEtaR(h, ha, p),
+                etaS = GetEtaS(),
+            };
+        }
     }
 }

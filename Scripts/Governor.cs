@@ -38,6 +38,11 @@ namespace USS2
             Value = screwPropeller ? screwPropeller.n : Value;
         }
 
+        public void _USS_Respawned()
+        {
+            Value = 0.0f;
+        }
+
         public void Increase()
         {
             Value += increaseStep;

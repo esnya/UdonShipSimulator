@@ -1,0 +1,76 @@
+using UdonSharp;
+using UnityEngine;
+using VRC.SDKBase;
+
+namespace USS2
+{
+    [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
+    public class ScrewPropellerAnimator : UdonSharpBehaviour
+    {
+        public ScrewPropeller screwPropeller;
+        public Vector3 axis = Vector3.forward;
+
+        private ParticleSystem.MainModule particleMain;
+        private ParticleSystem.EmissionModule particleEmission;
+        private bool hasParticle;
+        private float startSpeedMultiplier;
+        private float rateOverTimeMultiplier;
+
+        [UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(N))] private float _n;
+        private float N
+        {
+            get => _n;
+            set
+            {
+                _n = value;
+
+                if (hasParticle)
+                {
+                    var nn = _n / screwPropeller.maxRPM;
+                    particleMain.startSpeedMultiplier = startSpeedMultiplier * nn;
+                    particleEmission.rateOverTimeMultiplier = rateOverTimeMultiplier * nn;
+                }
+            }
+        }
+
+        private float _angle;
+        private float Angle
+        {
+            get => _angle;
+            set {
+                _angle = value % 360.0f;
+                transform.localRotation = Quaternion.AngleAxis(_angle, axis);
+            }
+        }
+
+        private void Start()
+        {
+            var particleSystem = GetComponent<ParticleSystem>();
+            if (hasParticle = particleSystem)
+            {
+                particleMain = particleSystem.main;
+                startSpeedMultiplier = particleMain.startSpeedMultiplier;
+
+                particleEmission = particleSystem.emission;
+                rateOverTimeMultiplier = particleEmission.rateOverTimeMultiplier;
+            }
+
+        }
+
+        private void Update()
+        {
+            if (Networking.IsOwner(gameObject))
+            {
+                N = screwPropeller.nr;
+            }
+
+            Angle += N * 360.0f * Time.deltaTime;
+        }
+
+        public void _USS_Respawned()
+        {
+            N = 0.0f;
+            Angle = 0.0f;
+        }
+    }
+}

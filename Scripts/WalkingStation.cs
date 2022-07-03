@@ -14,16 +14,42 @@ namespace USS2
     [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
     public class WalkingStation : UdonSharpBehaviour
     {
+        [Header("Collision Check")]
+        /// <summary>
+        /// Layer mask for the collision check.
+        /// </summary>
         public LayerMask groundLayer = 1 << 29;
+
+        /// <summary>
+        /// Maximum height from floor. Exit station If exeeded.
+        /// </summary>
         public float maxHeight = 10.0f;
+
+        /// <summary>
+        /// Maximum height to climbalbe.
+        /// </summary>
         public float stepHeight = 0.8f;
-        public float doubleJumpInterval = 0.2f;
-        public float walkSpeed = 2.0f;
-        public float rotationSpeed = 50.0f;
-        public float fallTimeout = 0.5f;
-        public float exitTimeout = 0.5f;
+
+        /// <summary>
+        /// Width of player collider. Miminum hole width to pass.
+        /// </summary>
         public float playerWidth = 1.0f;
+
+        /// <summary>
+        /// Height op player collider. Miminum hole height to pass.
+        /// </summary>
         public float playerHeight = 1.6f;
+
+        [Header("Player Moving")]
+        /// <summary>
+        /// Walk speed.
+        /// </summary>
+        public float walkSpeed = 2.0f;
+
+        /// <summary>
+        /// Rotation speed.
+        /// </summary>
+        public float rotationSpeed = 200.0f;
 
         [UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(SeatLocalPosition))] private Vector3 _seatLocalPosition;
         private Vector3 SeatLocalPosition

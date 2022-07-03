@@ -1,7 +1,9 @@
 using UdonSharp;
 using UnityEngine;
+using VRC.SDK3.Components;
 using VRC.SDKBase;
 using VRC.Udon;
+using VRC.Udon.Common.Interfaces;
 
 namespace USS2
 {
@@ -11,6 +13,7 @@ namespace USS2
         public const string EVENT_VesselStart = "_USS_VesselStart";
         public const string EVENT_TakeOwnership = "_USS_TakeOwnership";
         public const string EVENT_LoseOwnership = "_USS_LoseOwnership";
+        public const string EVENT_Respawned = "_USS_Respawned";
 
         public bool freezeOnStart = true;
         public GameObject ownerOnly;
@@ -20,6 +23,9 @@ namespace USS2
         private UdonSharpBehaviour[] children;
         private float drag;
         private float angularDrag;
+        private Vector3 initialPosition;
+        private Quaternion initialRotation;
+        private VRCObjectSync objectSync;
 
         public bool IsOwner
         {
@@ -34,15 +40,13 @@ namespace USS2
 
         private void Start()
         {
-            vesselRigidbody = GetComponent<Rigidbody>();
+            initialPosition = transform.localPosition;
+            initialRotation = transform.localRotation;
 
-            if (freezeOnStart)
-            {
-                drag = vesselRigidbody.drag;
-                angularDrag = vesselRigidbody.angularDrag;
-                vesselRigidbody.drag = vesselRigidbody.mass;
-                vesselRigidbody.angularDrag = vesselRigidbody.mass;
-            }
+            vesselRigidbody = GetComponent<Rigidbody>();
+            objectSync = (VRCObjectSync)GetComponent(typeof(VRCObjectSync));
+
+            if (freezeOnStart) Freeze();
 
             _isOwner = Networking.IsOwner(gameObject);
             SendCustomEventDelayedSeconds(nameof(_LateStart), 10);
@@ -56,20 +60,35 @@ namespace USS2
                 if (child) child.SetProgramVariable("vessel", this);
             }
 
-            if (freezeOnStart)
-            {
-                vesselRigidbody.velocity = Vector3.zero;
-                vesselRigidbody.angularVelocity = Vector3.zero;
-                vesselRigidbody.drag = drag;
-                vesselRigidbody.angularDrag = angularDrag;
-            }
-
             _SendCustomEventToChildren(EVENT_VesselStart);
+        }
+
+        private void Freeze()
+        {
+            drag = vesselRigidbody.drag;
+            angularDrag = vesselRigidbody.angularDrag;
+            vesselRigidbody.drag = vesselRigidbody.mass;
+            vesselRigidbody.angularDrag = vesselRigidbody.mass;
+            SendCustomEventDelayedSeconds(nameof(_Unfreeze), 10);
+        }
+
+        public void _Unfreeze()
+        {
+            vesselRigidbody.velocity = Vector3.zero;
+            vesselRigidbody.angularVelocity = Vector3.zero;
+            vesselRigidbody.drag = drag;
+            vesselRigidbody.angularDrag = angularDrag;
         }
 
         public override void OnOwnershipTransferred(VRCPlayerApi player)
         {
-            IsOwner = player.isLocal;
+            if (IsOwner = player.isLocal)
+            {
+                foreach (var child in children)
+                {
+                    if (child && !Networking.IsOwner(child.gameObject)) Networking.SetOwner(player, child.gameObject);
+                }
+            }
         }
 
         public void _SendCustomEventToChildren(string eventName)
@@ -79,5 +98,27 @@ namespace USS2
                 if (child) child.SendCustomEvent(eventName);
             }
         }
+
+        public void _TakeOwnership()
+        {
+            if (!Networking.IsOwner(gameObject))
+            {
+                Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            }
+        }
+
+        public void _Respawn()
+        {
+            _TakeOwnership();
+
+            Freeze();
+            transform.localPosition = initialPosition;
+            transform.localRotation = initialRotation;
+            if (objectSync) objectSync.FlagDiscontinuity();
+
+            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(OnRespawned));
+        }
+
+        public void OnRespawned() => _SendCustomEventToChildren(EVENT_Respawned);
     }
 }

@@ -13,8 +13,10 @@ namespace USS2
     /// <summary>
     /// Rudder.
     ///
-    /// 葛湯 西室, 宏彰 直: "規舵に作用する力と船体・プロペラとの干渉" (1983)
+    /// Cites:
+    /// [1] 葛湯, 宏彰 : 舵に作用する力と船体・プロペラとの干渉, 日本造船学会誌 第578号 (昭和52)
     /// </summary>
+    [DefaultExecutionOrder(100)] // After ScrewPropeller
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class Rudder : UdonSharpBehaviour
     {
@@ -54,6 +56,8 @@ namespace USS2
         private float rho = Ocean.OceanRho;
         private float seaLevel;
         private Vector3 localForce;
+        private ScrewPropeller[] propellers;
+        private float[] usrs;
 
         private void Start()
         {
@@ -65,6 +69,14 @@ namespace USS2
             {
                 rho = ocean.rho;
                 seaLevel = ocean.transform.position.y;
+            }
+
+            propellers = vesselRigidbody.GetComponentsInChildren<ScrewPropeller>(true);
+            usrs = new float[propellers.Length];
+            for (var i = 0; i < usrs.Length; i++)
+            {
+                var propeller = propellers[i];
+                usrs[i] = Vector3.Distance(propeller.transform.position, transform.position);
             }
 
             surfaceArea = length * depth;
