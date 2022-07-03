@@ -3,13 +3,14 @@ namespace USS2
     using TMPro;
     using UdonSharp;
     using UnityEngine;
+    using VRC.SDKBase;
 
     [RequireComponent(typeof(TextMeshPro))]
-    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
     [DefaultExecutionOrder(100)] // After ScrewPropeller
     public class PropulationDebugText : UdonSharpBehaviour
     {
-        public int updateInterval = 10;
+        public int updateInterval = 45;
         public ScrewPropeller propeller;
 
         private Transform propellerTransform;
@@ -18,6 +19,8 @@ namespace USS2
         private float prevTime;
         private TextMeshPro textMesh;
         private int updateOffset;
+        [UdonSynced] private float t;
+        [UdonSynced] private float n;
 
         private void Start()
         {
@@ -37,15 +40,17 @@ namespace USS2
             prevTime = time;
             prevPosition = position;
 
-            var t = propeller.n;
-            var n = propeller.nr;
+            if (Networking.IsOwner(propeller.gameObject))
+            {
+                t = propeller.n;
+                n = propeller.nr;
+            }
             var maxRPM = propeller.maxRPM;
             var rpmResponse = propeller.rpmResponse;
             var qa = propeller.GetAvailableTorque(vs, t);
             var qr = propeller.GetPropellerTorque(vs, n);
             var j = propeller.GetJ(vs, n);
             var eta0 = propeller.GetPropellerEfficiency(j);
-
 
             textMesh.text = string.Join("\n", new[] {
                 $"Throttle:\t{t * 100.0f:F2}%",
