@@ -42,13 +42,15 @@ namespace USS2
         {
             initialPosition = transform.localPosition;
             initialRotation = transform.localRotation;
+            drag = vesselRigidbody.drag;
+            angularDrag = vesselRigidbody.angularDrag;
 
             vesselRigidbody = GetComponent<Rigidbody>();
             objectSync = (VRCObjectSync)GetComponent(typeof(VRCObjectSync));
 
             if (freezeOnStart) Freeze();
 
-            _isOwner = Networking.IsOwner(gameObject);
+            IsOwner = Networking.IsOwner(gameObject);
             SendCustomEventDelayedSeconds(nameof(_LateStart), 10);
         }
 
@@ -65,8 +67,6 @@ namespace USS2
 
         private void Freeze()
         {
-            drag = vesselRigidbody.drag;
-            angularDrag = vesselRigidbody.angularDrag;
             vesselRigidbody.drag = vesselRigidbody.mass;
             vesselRigidbody.angularDrag = vesselRigidbody.mass;
             SendCustomEventDelayedSeconds(nameof(_Unfreeze), 10);
