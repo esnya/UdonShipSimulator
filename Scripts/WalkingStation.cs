@@ -44,7 +44,7 @@ namespace USS2
         /// <summary>
         /// Walk speed.
         /// </summary>
-        public float walkSpeed = 2.0f;
+        public float walkSpeed = 1.0f;
 
         /// <summary>
         /// Rotation speed.
@@ -119,7 +119,7 @@ namespace USS2
         {
             if (!seated) return;
 
-            var moveInput = Vector3.right * Input.GetAxisRaw("Horizontal") + Vector3.forward * Input.GetAxisRaw("Vertical");
+            var moveInput = Vector3.right * Input.GetAxis("Horizontal") + Vector3.forward * Input.GetAxis("Vertical");
             if (onGround && moveInput.magnitude > 0.0f) Move(moveInput * walkSpeed);
 
             var rotationInput = Input.GetAxisRaw("Oculus_CrossPlatform_SecondaryThumbstickHorizontal") + (Networking.LocalPlayer.IsUserInVR() ? 0.0f : Input.GetAxisRaw("Mouse X"));
