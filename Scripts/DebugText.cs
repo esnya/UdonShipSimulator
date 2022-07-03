@@ -8,7 +8,7 @@ namespace UdonShipSimulator
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class DebugText : UdonSharpBehaviour
     {
-        public int updateInterval = 10;
+        public int updateInterval = 45;
         public Transform target;
 
         private Vector3 prevPosition;
