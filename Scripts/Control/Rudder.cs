@@ -31,24 +31,14 @@ namespace USS2
         public float depth = 6.0f;
 
         /// <summary>
-        /// Lift coefficient curve.
-        /// </summary>
-        public float clMax = 0.8f;
-
-        /// <summary>
-        /// Angle of attack with max Cl
-        /// </summary>
-        public float maxAlpha = 12.0f;
-
-        /// <summary>
-        /// Curve of lift.
-        /// </summary>
-        public float liftCurve = 2.0f;
-
-        /// <summary>
         /// Resistance factor.
         /// </summary>
         [Range(1.3f, 2.0f)] public float appendageResistanceFactor = 1.5f;
+
+        /// <summary>
+        /// Slip stream factor.
+        /// </summary>
+        [Range(1.2f, 1.5f)] public float k = 1.5f;
 
         [NonSerialized] public float surfaceArea;
         private float forceMultiplier;
@@ -57,12 +47,10 @@ namespace USS2
         private float seaLevel;
         private Vector3 localForce;
         private ScrewPropeller[] propellers;
-        private float[] usrs;
 
         private void Start()
         {
             vesselRigidbody = GetComponentInParent<Rigidbody>();
-
 
             var ocean = vesselRigidbody.GetComponentInParent<Ocean>();
             if (ocean)
@@ -72,12 +60,6 @@ namespace USS2
             }
 
             propellers = vesselRigidbody.GetComponentsInChildren<ScrewPropeller>(true);
-            usrs = new float[propellers.Length];
-            for (var i = 0; i < usrs.Length; i++)
-            {
-                var propeller = propellers[i];
-                usrs[i] = Vector3.Distance(propeller.transform.position, transform.position);
-            }
 
             surfaceArea = length * depth;
             forceMultiplier = 0.5f * rho * surfaceArea * GetCfnArFactor();
@@ -96,23 +78,17 @@ namespace USS2
                 return;
             }
 
-            var localVelocity2D = GetLocalVelocity2D();
-            var speed = localVelocity2D.magnitude;
-            localForce = Vector3.left * (Mathf.Pow(speed, 2.0f) * localVelocity2D.normalized.x * forceMultiplier);
-
-            // if (float.IsNaN(localForce.x))
-            // {
-            //     Debug.Log($"{localVelocity2D}, {localForce}, {forceMultiplier}", this);
-            // }
+            var u = GetVelocity2D();
+            var ur = u + GetTotalDeltaUS(u);
+            localForce = Vector3.left * (Mathf.Pow(ur.magnitude, 2.0f) * Vector3.Dot(transform.right, ur.normalized) * forceMultiplier);
         }
 
-        private Vector3 GetLocalVelocity2D()
+        private Vector3 GetVelocity2D()
         {
             var centerOfMass = vesselRigidbody.worldCenterOfMass;
             var centerOfLift = transform.position;
             var velocity = vesselRigidbody.velocity + Vector3.Cross(vesselRigidbody.angularVelocity, centerOfLift - centerOfMass);
-            var localVelocity = transform.InverseTransformDirection(velocity);
-            return Vector3.ProjectOnPlane(localVelocity, Vector3.up);
+            return Vector3.ProjectOnPlane(velocity, transform.up);
         }
 
         private float GetAlpha(Vector3 localVelocity2D)
@@ -126,6 +102,27 @@ namespace USS2
             var ar = depth / length;
             return 6.13f * ar / (ar + 2.25f);
         }
+
+        private Vector3 GetPropellerDeltaUS(Vector3 u, ScrewPropeller propeller)
+        {
+            var n = propeller.nr;
+            var direction = propeller.transform.forward;
+            var up = Vector3.Dot(u, direction);
+            var p = propeller.pitch;
+            var du = Mathf.Max(Mathf.Sign(n) * (Mathf.Pow(Mathf.Abs(up), 1.0f - 0.5f * k) * Mathf.Pow(Mathf.Abs(n) * p, 0.5f * k) - up), 0.0f);
+            return direction * du;
+        }
+
+        private Vector3 GetTotalDeltaUS(Vector3 u)
+        {
+            var result = Vector3.zero;
+            for (var i = 0; i < propellers.Length; i++)
+            {
+                result += GetPropellerDeltaUS(u, propellers[i]);
+            }
+            return result;
+        }
+
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
@@ -138,15 +135,34 @@ namespace USS2
 
                 Handles.matrix = Gizmos.matrix = transform.localToWorldMatrix;
 
-                var localVelocity2D = GetLocalVelocity2D();
-                Gizmos.color = Color.blue;
-                Gizmos.DrawRay(Vector3.zero, localVelocity2D);
-
-                var alpha = GetAlpha(localVelocity2D);
-                var alphaAbs = Mathf.Abs(alpha);
-                Handles.color = Gizmos.color = alphaAbs <= maxAlpha ? Color.Lerp(Color.white, Color.green, alphaAbs / maxAlpha) : Color.Lerp(Color.green, Color.red, (alphaAbs - maxAlpha) / maxAlpha);
-                Handles.Label(Vector3.zero, $"α: {alpha:F2}°");
+                Gizmos.color = Color.white;
                 Gizmos.DrawWireCube(Vector3.zero, new Vector3(0.0f, depth, length));
+
+                var u = GetVelocity2D();
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawRay(Vector3.zero, transform.InverseTransformVector(u));
+
+                if (propellers != null)
+                {
+                    var ur = u + GetTotalDeltaUS(u);
+                    Gizmos.color = Color.blue;
+                    Gizmos.DrawRay(Vector3.zero, transform.InverseTransformVector(ur));
+
+                    Gizmos.color = Color.cyan;
+                    foreach (var propeller in propellers)
+                    {
+                        var dur = GetPropellerDeltaUS(u, propeller);
+                        Gizmos.DrawRay(Vector3.zero, transform.InverseTransformVector(dur));
+
+                        var p = propeller.pitch;
+                        var direction = propeller.transform.forward;
+                        var up = Vector3.Dot(u, direction);
+                        var n = propeller.nr;
+                        var du = Mathf.Pow(Mathf.Abs(up), 1.0f - 0.5f * k) * Mathf.Pow(Mathf.Abs(n) * p, 0.5f * k) - up;
+
+                        Handles.Label(transform.InverseTransformPoint(propeller.transform.position), $"UP:\t{up:F2}m/s\nnP:\t{n * p:F2}\nUS/UP:\t{du:F4}\nΔUR:\t{dur.magnitude:F2}m/s");
+                    }
+                }
 
                 Gizmos.color = Color.green;
                 Gizmos.DrawRay(Vector3.zero, localForce * forceScale);

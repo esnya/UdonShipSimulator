@@ -13,7 +13,6 @@ namespace USS2
         private ParticleSystem.MainModule particleMain;
         private ParticleSystem.EmissionModule particleEmission;
         private bool hasParticle;
-        private float startSpeedMultiplier;
         private float rateOverTimeMultiplier;
         public float particleRateCurve = 100.0f;
 
@@ -28,13 +27,14 @@ namespace USS2
                 if (hasParticle)
                 {
                     var nn = Mathf.Clamp(_n / screwPropeller.maxRPM, -1.0f, 1.0f);
-                    particleMain.startSpeedMultiplier = startSpeedMultiplier * nn;
                     particleEmission.rateOverTimeMultiplier = rateOverTimeMultiplier * ParticleRateCurve(Mathf.Abs(nn), particleRateCurve);
                 }
             }
         }
 
         private float _angle;
+        private float propellerPitch;
+
         private float Angle
         {
             get => _angle;
@@ -50,12 +50,12 @@ namespace USS2
             if (hasParticle = particleSystem)
             {
                 particleMain = particleSystem.main;
-                startSpeedMultiplier = particleMain.startSpeedMultiplier;
 
                 particleEmission = particleSystem.emission;
                 rateOverTimeMultiplier = particleEmission.rateOverTimeMultiplier;
             }
 
+            propellerPitch = screwPropeller.pitch;
         }
 
         private void Update()
@@ -66,6 +66,11 @@ namespace USS2
             }
 
             Angle += N * 360.0f * Time.deltaTime;
+
+            if (hasParticle)
+            {
+                particleMain.startSpeedMultiplier = N * propellerPitch;
+            }
         }
 
         public void _USS_Respawned()
