@@ -12,6 +12,7 @@ namespace USS2
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class HullAppendage : UdonSharpBehaviour
     {
+        public const int CUSTOM = 0;
         public const int RUDDER_BEHIND_SKEG = 1;
         public const int RUDDER_BEHIND_STERN = 2;
         public const int TWIN_SCREW_BALANCE_RUDDERS = 3;
@@ -39,6 +40,11 @@ namespace USS2
         /// </summary>
         [Range(0.0f, 1.0f)] public float shapeFactor = 0.0f;
 
+        /// <summary>
+        /// Custom shape factor used with type = CUSTOM.
+        /// </summary>
+        [Min(1.0f)] public float customShapeFactor = 1.0f;
+
         [NonSerialized] public float appendageResistanceFactor;
         [NonSerialized] public float surfaceArea;
 
@@ -53,6 +59,8 @@ namespace USS2
         {
             switch (appendageType)
             {
+                case CUSTOM:
+                    return customShapeFactor;
                 case RUDDER_BEHIND_SKEG:
                     return 1.5f;
                 case RUDDER_BEHIND_STERN:
@@ -99,16 +107,22 @@ namespace USS2
 
         public float GetSurfaceArea()
         {
+            return IsCylinder() ?  Mathf.PI * size.x * size.z : (size.x * size.y + size.x * size.z + size.y * size.z) * 2.0f;
+        }
+
+        public bool IsCylinder()
+        {
             switch (appendageType)
             {
                 case SHAFTS:
-                    return Mathf.PI * size.x * size.z;
+                    return true;
                 default:
-                    return (size.x * size.y + size.x * size.z + size.y * size.z) * 2.0f;
+                    return false;
             }
         }
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         public string[] GetAppendageTypes() => new [] {
+            "Custom",
             "Rudder behind Skeg",
             "Rudder behind Stern",
             "Twin-Screw Balance Rudders",
@@ -130,7 +144,12 @@ namespace USS2
                 Gizmos.matrix = transform.localToWorldMatrix;
 
                 Gizmos.color = Color.red;
-                Gizmos.DrawWireCube(Vector3.zero, size);
+                if (IsCylinder())
+                {
+                    Gizmos.DrawLine(Vector3.forward * size.z * 0.5f, Vector3.back * size.z * 0.5f);
+                    Gizmos.DrawWireSphere(Vector3.zero, size.x * 0.5f);
+                }
+                else Gizmos.DrawWireCube(Vector3.zero, size);
             }
             finally
             {
