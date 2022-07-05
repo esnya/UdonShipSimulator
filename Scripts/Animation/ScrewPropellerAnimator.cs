@@ -15,6 +15,7 @@ namespace USS2
         private bool hasParticle;
         private float startSpeedMultiplier;
         private float rateOverTimeMultiplier;
+        public float particleRateCurve = 100.0f;
 
         [UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(N))] private float _n;
         private float N
@@ -26,9 +27,9 @@ namespace USS2
 
                 if (hasParticle)
                 {
-                    var nn = _n / screwPropeller.maxRPM;
+                    var nn = Mathf.Clamp(_n / screwPropeller.maxRPM, -1.0f, 1.0f);
                     particleMain.startSpeedMultiplier = startSpeedMultiplier * nn;
-                    particleEmission.rateOverTimeMultiplier = rateOverTimeMultiplier * nn;
+                    particleEmission.rateOverTimeMultiplier = rateOverTimeMultiplier * ParticleRateCurve(Mathf.Abs(nn), particleRateCurve);
                 }
             }
         }
@@ -71,6 +72,11 @@ namespace USS2
         {
             N = 0.0f;
             Angle = 0.0f;
+        }
+
+        private float ParticleRateCurve(float x, float a)
+        {
+            return (1 + a) / (1 + a * x) * x;
         }
     }
 }
