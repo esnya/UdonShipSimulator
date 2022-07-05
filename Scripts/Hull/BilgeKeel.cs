@@ -27,8 +27,13 @@ namespace USS2
         /// </summary>
         public float length = 20.0f;
 
-        [NonSerialized] public int appendageType = HullAppendage.BLIGE_KEEL;
-        [NonSerialized] public float appendageResistanceFactor = 1.4f;
+        /// <summary>
+        /// Set true for skeg.
+        /// </summary>
+        public bool isSkeg = false;
+
+        [NonSerialized] public int appendageType;
+        [NonSerialized] public float appendageResistanceFactor;
         [NonSerialized] public float surfaceArea;
         private Rigidbody vesselRigidbody;
         private Vector3 localForce;
@@ -47,6 +52,9 @@ namespace USS2
                 seaLevel = ocean.transform.position.y;
             }
 
+            // appendageType = isSkeg ? HullAppendage.SKEG : HullAppendage.BLIGE_KEEL;
+            appendageType = isSkeg ? 5 : 11;
+            appendageResistanceFactor = isSkeg ? 1.5f : 1.4f;
             surfaceArea = breadth * length;
 
             var hull = vesselRigidbody.GetComponentInChildren<Hull>();
