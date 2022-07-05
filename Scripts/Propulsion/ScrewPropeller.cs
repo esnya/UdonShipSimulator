@@ -130,7 +130,7 @@ namespace USS2
 
         public float GetEfficiency(float v)
         {
-            return shaftEfficiency * etaR * (etaH == null ? etaH.Evaluate(Mathf.Abs(v)) : 1.0f);
+            return shaftEfficiency * etaR * (etaH == null ? 1.0f : etaH.Evaluate(Mathf.Abs(v)));
         }
 
         public float GetExcessPower(float va, float throttle, float n)
