@@ -9,12 +9,12 @@ namespace USS2
     {
         public ScrewPropeller screwPropeller;
         public Vector3 axis = Vector3.forward;
+        public float minRPM = 60.0f;
 
         private ParticleSystem.MainModule particleMain;
         private ParticleSystem.EmissionModule particleEmission;
         private bool hasParticle;
         private float rateOverTimeMultiplier;
-        public float particleRateCurve = 100.0f;
 
         [UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(N))] private float _n;
         private float N
@@ -26,8 +26,7 @@ namespace USS2
 
                 if (hasParticle)
                 {
-                    var nn = Mathf.Clamp(_n / screwPropeller.maxRPM, -1.0f, 1.0f);
-                    particleEmission.rateOverTimeMultiplier = rateOverTimeMultiplier * ParticleRateCurve(Mathf.Abs(nn), particleRateCurve);
+                    particleEmission.rateOverTimeMultiplier = rateOverTimeMultiplier * Mathf.SmoothStep(0.0f, minRPM / 60.0f, Mathf.Abs(_n));
                 }
             }
         }
@@ -62,7 +61,7 @@ namespace USS2
         {
             if (Networking.IsOwner(gameObject))
             {
-                N = screwPropeller.nr;
+                N = screwPropeller.n;
             }
 
             Angle += N * 360.0f * Time.deltaTime;
@@ -77,11 +76,6 @@ namespace USS2
         {
             N = 0.0f;
             Angle = 0.0f;
-        }
-
-        private float ParticleRateCurve(float x, float a)
-        {
-            return (1 + a) / (1 + a * x) * x;
         }
     }
 }

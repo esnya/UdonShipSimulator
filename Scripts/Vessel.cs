@@ -8,6 +8,7 @@ using VRC.Udon.Common.Interfaces;
 namespace USS2
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    [DefaultExecutionOrder(300)] // After Hull
     public class Vessel : UdonSharpBehaviour
     {
         public const string EVENT_VesselStart = "_USS_VesselStart";
@@ -26,6 +27,7 @@ namespace USS2
         private Vector3 initialPosition;
         private Quaternion initialRotation;
         private VRCObjectSync objectSync;
+        private object seaLevel;
 
         public bool IsOwner
         {
@@ -43,11 +45,16 @@ namespace USS2
             vesselRigidbody = GetComponent<Rigidbody>();
             objectSync = (VRCObjectSync)GetComponent(typeof(VRCObjectSync));
 
+            var ocean = GetComponentInParent<Ocean>();
+            if (ocean)
+            {
+                seaLevel = ocean.transform.position.y;
+            }
+
             initialPosition = transform.localPosition;
             initialRotation = transform.localRotation;
             drag = vesselRigidbody.drag;
             angularDrag = vesselRigidbody.angularDrag;
-
 
             if (freezeOnStart) Freeze();
 

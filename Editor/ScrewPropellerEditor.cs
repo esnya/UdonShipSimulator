@@ -9,14 +9,11 @@ namespace USS2
     [CustomEditor(typeof(ScrewPropeller))]
     public class ScrewPropellerEditor : Editor
     {
-        private float rpm;
+        private float rpm = 100.0f;
         private float speed = 30;
         private float throttle = 1;
-        private float powerRange;
         private float torqueRange;
-        private bool powerBySpeed;
         private bool efficiencyByAdvanceRatio;
-        private bool powerByRPM;
         private bool torqueBySpeed;
         private bool torqueByRPM;
 
@@ -25,9 +22,7 @@ namespace USS2
             var propeller = target as ScrewPropeller;
             if (!propeller) return;
 
-            rpm = propeller.maxRPM;
             torqueRange = (propeller.GetComponentInParent<Rigidbody>()?.mass ?? 10000.0f) / propeller.diameter;
-            powerRange = propeller.power;
         }
 
         private static bool IsNaNorInf(float v)
@@ -154,9 +149,7 @@ namespace USS2
                 );
             }
 
-            var pMax = powerRange;
-            var nMax = propeller.maxRPM / 60.0f;
-
+            var nMax = rpm;
             var qScale = 1.0f / 1000.0f;
             var qMax = torqueRange;
             if (torqueBySpeed = EditorGUILayout.Foldout(torqueBySpeed, "Torque [kNm] By Speed [m/s]"))
@@ -170,23 +163,13 @@ namespace USS2
                     new Vector2Int(4, 4),
                     new[] {
                     (
-                        vRange.Select(v => new Vector2(v, propeller.GetPropellerTorque(v, rev) * rev * qScale)),
+                        vRange.Select(v => new Vector2(v, propeller.GetPropellerTorque(v, rev) / propeller.GetEfficiency(v) * rev * qScale)),
                         Color.red,
                         "Required Torque"
                     ),
-                    (
-                        vRange.Select(v => new Vector2(v, propeller.GetAvailableTorque(v, throttle)) * qScale),
-                        Color.blue,
-                        "Available Torque"
-                    ),
-                    (
-                        vRange.Select(v => new Vector2(v, propeller.GetExcessTorque(v, throttle, rev) * qScale)),
-                        Color.green,
-                        "Excessed Torque"
-                    ),
                     }
                 );
-                rpm = EditorGUILayout.Slider("RPM", rpm, 0, propeller.maxRPM);
+                rpm = Mathf.Max(EditorGUILayout.FloatField("RPM", rpm), 0.0f);
                 throttle = EditorGUILayout.Slider("Throttle", throttle, 0.0f, 1.0f);
                 torqueRange = Mathf.Max(EditorGUILayout.FloatField("Torque Range", torqueRange), 0.0f);
             }
@@ -200,19 +183,9 @@ namespace USS2
                     new Vector2Int(4, 4),
                     new[] {
                     (
-                        nRange.Select(n => new Vector2(n * 60.0f, propeller.GetPropellerTorque(speed, n) * n) * qScale),
+                        nRange.Select(n => new Vector2(n * 60.0f, propeller.GetPropellerTorque(speed, n) / propeller.GetEfficiency(speed) * n) * qScale),
                         Color.red,
                         "Required Torque"
-                    ),
-                    (
-                        nRange.Select(n => new Vector2(n * 60.0f, propeller.GetAvailableTorque(speed, throttle)) * qScale),
-                        Color.blue,
-                        "Available Torque"
-                    ),
-                    (
-                        nRange.Select(n => new Vector2(n * 60.0f, propeller.GetExcessTorque(speed, throttle, n) * qScale)),
-                        Color.green,
-                        "Excessed Torque"
                     ),
                     }
                 );

@@ -12,6 +12,7 @@ namespace USS2
     {
         public int updateInterval = 45;
         public ScrewPropeller propeller;
+        public SteamTurbine turbine;
 
         private Transform propellerTransform;
 
@@ -42,13 +43,13 @@ namespace USS2
 
             if (Networking.IsOwner(propeller.gameObject))
             {
-                t = propeller.n;
-                n = propeller.nr;
+                t = turbine.input;
+                n = turbine.n;
             }
-            var maxRPM = propeller.maxRPM;
-            var rpmResponse = propeller.rpmResponse;
-            var qa = propeller.GetAvailableTorque(vs, t);
-            var qr = propeller.GetPropellerTorque(vs, n);
+            var maxRPM = turbine.rpm;
+            var shaftMomentOfInertia = turbine.shaftMomentOfInertia;
+            var qa = turbine.GetAvailableTorque(t);
+            var qr = propeller.GetPropellerTorque(vs, n) / propeller.GetEfficiency(vs);
             var j = propeller.GetJ(vs, n);
             var eta0 = propeller.GetPropellerEfficiency(j);
 
@@ -56,7 +57,7 @@ namespace USS2
                 $"Throttle:\t{t * 100.0f:F0}%",
                 $"N:\t{n * 60.0f:F2}rpm",
                 $"\t{n / maxRPM * 60.0f * 100.0f:F2}%",
-                $"ΔN:\t{(qa - qr) * rpmResponse * 100:F2}rpm/s",
+                $"ΔN:\t{(qa - qr) / shaftMomentOfInertia * 100:F2}rpm/s",
                 $"Qa:\t{qa / 1000.0f:F2}kNm",
                 $"Qr:\t{qr / 1000.0f:F2}kNm",
                 $"\t{(qa - qr) / qa * 100:F2}%",
@@ -71,5 +72,4 @@ namespace USS2
             });
         }
     }
-
 }

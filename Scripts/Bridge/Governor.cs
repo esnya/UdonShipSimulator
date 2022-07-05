@@ -8,9 +8,9 @@ namespace USS2
     [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
     public class Governor : UdonSharpBehaviour
     {
-        public ScrewPropeller screwPropeller;
+        public SteamTurbine turbine;
         [SerializeField][UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(Value))] private float _value;
-        public float increaseStep = 0.25f;
+        public float increaseStep = 0.05f;
 
         [ListView("Visual Transforms")] public Transform[] visualTransforms = { };
         [ListView("Visual Transforms")] public float[] rotationScales = { };
@@ -22,7 +22,7 @@ namespace USS2
             set
             {
                 _value = Mathf.Clamp(value, -1.0f, 1.0f);
-                if (screwPropeller) screwPropeller.n = _value;
+                if (turbine) turbine.input = _value;
                 for (var i = 0; i < visualTransforms.Length; i++)
                 {
                     var t = visualTransforms[i];
@@ -35,7 +35,7 @@ namespace USS2
 
         private void Start()
         {
-            Value = screwPropeller ? screwPropeller.n : Value;
+            Value = turbine ? turbine.input : Value;
         }
 
         public void _USS_Respawned()

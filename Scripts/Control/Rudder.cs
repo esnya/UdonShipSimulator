@@ -105,7 +105,7 @@ namespace USS2
 
         private Vector3 GetPropellerDeltaUS(Vector3 u, ScrewPropeller propeller)
         {
-            var n = propeller.nr;
+            var n = propeller.n;
             var direction = propeller.transform.forward;
             var up = Vector3.Dot(u, direction);
             var p = propeller.pitch;
@@ -157,7 +157,7 @@ namespace USS2
                         var p = propeller.pitch;
                         var direction = propeller.transform.forward;
                         var up = Vector3.Dot(u, direction);
-                        var n = propeller.nr;
+                        var n = propeller.n;
                         var du = Mathf.Pow(Mathf.Abs(up), 1.0f - 0.5f * k) * Mathf.Pow(Mathf.Abs(n) * p, 0.5f * k) - up;
 
                         Handles.Label(transform.InverseTransformPoint(propeller.transform.position), $"UP:\t{up:F2}m/s\nnP:\t{n * p:F2}\nUS/UP:\t{du:F4}\nΔUR:\t{dur.magnitude:F2}m/s");

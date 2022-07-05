@@ -176,7 +176,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: particleMain
+      Data: minRPM
     - Name: $v
       Entry: 7
       Data: 10|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -188,25 +188,25 @@ MonoBehaviour:
       Data: 12|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UnityEngine.ParticleSystem+MainModule, UnityEngine.ParticleSystemModule
+      Data: System.Single, mscorlib
     - Name: 
       Entry: 8
       Data: 
     - Name: declarationType
       Entry: 3
-      Data: 2
+      Data: 1
     - Name: syncMode
       Entry: 3
       Data: 0
     - Name: symbolResolvedTypeName
       Entry: 1
-      Data: UnityEngineParticleSystemMainModule
+      Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: particleMain
+      Data: minRPM
     - Name: symbolUniqueName
       Entry: 1
-      Data: particleMain
+      Data: minRPM
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -239,7 +239,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: particleEmission
+      Data: particleMain
     - Name: $v
       Entry: 7
       Data: 14|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -251,7 +251,7 @@ MonoBehaviour:
       Data: 16|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: UnityEngine.ParticleSystem+EmissionModule, UnityEngine.ParticleSystemModule
+      Data: UnityEngine.ParticleSystem+MainModule, UnityEngine.ParticleSystemModule
     - Name: 
       Entry: 8
       Data: 
@@ -263,13 +263,13 @@ MonoBehaviour:
       Data: 0
     - Name: symbolResolvedTypeName
       Entry: 1
-      Data: UnityEngineParticleSystemEmissionModule
+      Data: UnityEngineParticleSystemMainModule
     - Name: symbolOriginalName
       Entry: 1
-      Data: particleEmission
+      Data: particleMain
     - Name: symbolUniqueName
       Entry: 1
-      Data: particleEmission
+      Data: particleMain
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -302,7 +302,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: hasParticle
+      Data: particleEmission
     - Name: $v
       Entry: 7
       Data: 18|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -314,7 +314,7 @@ MonoBehaviour:
       Data: 20|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: System.Boolean, mscorlib
+      Data: UnityEngine.ParticleSystem+EmissionModule, UnityEngine.ParticleSystemModule
     - Name: 
       Entry: 8
       Data: 
@@ -326,13 +326,13 @@ MonoBehaviour:
       Data: 0
     - Name: symbolResolvedTypeName
       Entry: 1
-      Data: SystemBoolean
+      Data: UnityEngineParticleSystemEmissionModule
     - Name: symbolOriginalName
       Entry: 1
-      Data: hasParticle
+      Data: particleEmission
     - Name: symbolUniqueName
       Entry: 1
-      Data: hasParticle
+      Data: particleEmission
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -365,7 +365,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: rateOverTimeMultiplier
+      Data: hasParticle
     - Name: $v
       Entry: 7
       Data: 22|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -377,7 +377,7 @@ MonoBehaviour:
       Data: 24|System.RuntimeType, mscorlib
     - Name: 
       Entry: 1
-      Data: System.Single, mscorlib
+      Data: System.Boolean, mscorlib
     - Name: 
       Entry: 8
       Data: 
@@ -389,13 +389,13 @@ MonoBehaviour:
       Data: 0
     - Name: symbolResolvedTypeName
       Entry: 1
-      Data: SystemSingle
+      Data: SystemBoolean
     - Name: symbolOriginalName
       Entry: 1
-      Data: rateOverTimeMultiplier
+      Data: hasParticle
     - Name: symbolUniqueName
       Entry: 1
-      Data: rateOverTimeMultiplier
+      Data: hasParticle
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -428,7 +428,7 @@ MonoBehaviour:
       Data: 
     - Name: $k
       Entry: 1
-      Data: particleRateCurve
+      Data: rateOverTimeMultiplier
     - Name: $v
       Entry: 7
       Data: 26|UdonSharp.Compiler.FieldDefinition, UdonSharp.Editor
@@ -437,10 +437,10 @@ MonoBehaviour:
       Data: 27|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 9
-      Data: 24
+      Data: 12
     - Name: declarationType
       Entry: 3
-      Data: 1
+      Data: 2
     - Name: syncMode
       Entry: 3
       Data: 0
@@ -449,10 +449,10 @@ MonoBehaviour:
       Data: SystemSingle
     - Name: symbolOriginalName
       Entry: 1
-      Data: particleRateCurve
+      Data: rateOverTimeMultiplier
     - Name: symbolUniqueName
       Entry: 1
-      Data: particleRateCurve
+      Data: rateOverTimeMultiplier
     - Name: symbolDefaultValue
       Entry: 6
       Data: 
@@ -494,7 +494,7 @@ MonoBehaviour:
       Data: 30|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 9
-      Data: 24
+      Data: 12
     - Name: declarationType
       Entry: 3
       Data: 2
@@ -563,7 +563,7 @@ MonoBehaviour:
       Data: 35|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 9
-      Data: 24
+      Data: 12
     - Name: declarationType
       Entry: 3
       Data: 2
@@ -620,7 +620,7 @@ MonoBehaviour:
       Data: 38|UdonSharp.Compiler.SymbolDefinition, UdonSharp.Editor
     - Name: internalType
       Entry: 9
-      Data: 24
+      Data: 12
     - Name: declarationType
       Entry: 3
       Data: 2
