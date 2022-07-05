@@ -53,7 +53,7 @@ namespace USS2
             var eta0 = propeller.GetPropellerEfficiency(j);
 
             textMesh.text = string.Join("\n", new[] {
-                $"Throttle:\t{t * 100.0f:F2}%",
+                $"Throttle:\t{t * 100.0f:F0}%",
                 $"N:\t{n * 60.0f:F2}rpm",
                 $"\t{n / maxRPM * 60.0f * 100.0f:F2}%",
                 $"ΔN:\t{(qa - qr) * rpmResponse * 100:F2}rpm/s",
@@ -63,11 +63,11 @@ namespace USS2
                 $"T:\t{propeller.GetPropellerThrust(vs, n) / 1000.0f:F2}kN",
                 "",
                 $"Va:\t{vs:F2}m/s",
-                $"J:\t{j:F2}",
-                $"KT:\t{propeller.GetKT(j):F2}",
-                $"KQ:\t{propeller.GetKQ(j):F2}",
-                $"η0:\t{eta0:F2}",
-                $"η:\t{propeller.GetEfficiency(vs) * eta0:F2}",
+                $"J:\t{j:F4}",
+                $"KT:\t{propeller.GetKT(j):F4}",
+                $"KQ:\t{propeller.GetKQ(j):F4}",
+                $"η0:\t{eta0:F4}",
+                $"η:\t{propeller.GetEfficiency(vs) * eta0:F4}",
             });
         }
     }
