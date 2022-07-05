@@ -31,6 +31,10 @@ namespace USS2
         [Range(1, 64)] public int beamSteps = 2;
         [Range(1, 64)] public int curveProfilingSteps = 32;
         [Range(0.0f, 1.0f)] public float beamDraughtSamplingCurve = 0.1f;
+
+        [Header("Workarounds")]
+        public float verticalDrag = 0.01f;
+
         private float seaLevel;
         private AnimationCurve[] crossSectionAreaByDraughtProfiles;
         private int blocks;
@@ -60,6 +64,8 @@ namespace USS2
         private void FixedUpdate()
         {
             if (!vesselRigidbody) return;
+            vesselRigidbody.velocity = Vector3.Scale(vesselRigidbody.velocity, Vector3.one - Vector3.up * verticalDrag * Time.fixedDeltaTime);
+
             var gravity = Physics.gravity;
 
             for (var index = 0; index < blocks; index++)
@@ -753,7 +759,6 @@ namespace USS2
             var result = CreateAnimationCurve();
 
             var volume = GetVolume(designedDraught);
-            var surface = GetSurfaceAreaByDraughtProfile().Evaluate(designedDraught);
             var cb = GetVolume(depth) / (beam * length * designedDraught);
             var am = GetCrossSectionAreaByDraughtProfile(0.5f).Evaluate(designedDraught);
             var cp = volume / (length * am);
