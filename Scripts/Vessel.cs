@@ -40,13 +40,14 @@ namespace USS2
 
         private void Start()
         {
+            vesselRigidbody = GetComponent<Rigidbody>();
+            objectSync = (VRCObjectSync)GetComponent(typeof(VRCObjectSync));
+
             initialPosition = transform.localPosition;
             initialRotation = transform.localRotation;
             drag = vesselRigidbody.drag;
             angularDrag = vesselRigidbody.angularDrag;
 
-            vesselRigidbody = GetComponent<Rigidbody>();
-            objectSync = (VRCObjectSync)GetComponent(typeof(VRCObjectSync));
 
             if (freezeOnStart) Freeze();
 
@@ -93,6 +94,7 @@ namespace USS2
 
         public void _SendCustomEventToChildren(string eventName)
         {
+            if (children == null) return;
             foreach (var child in children)
             {
                 if (child) child.SendCustomEvent(eventName);
