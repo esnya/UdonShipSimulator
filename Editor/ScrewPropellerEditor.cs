@@ -155,7 +155,6 @@ namespace USS2
             }
 
             var pMax = powerRange;
-            var pScale = 1.0f / 1000.0f;
             var nMax = propeller.maxRPM / 60.0f;
 
             var qScale = 1.0f / 1000.0f;
@@ -220,6 +219,24 @@ namespace USS2
                 speed = EditorGUILayout.Slider("Speed", speed, 0, 100.0f);
                 throttle = EditorGUILayout.Slider("Throttle", throttle, 0.0f, 1.0f);
                 torqueRange = Mathf.Max(EditorGUILayout.FloatField("Torque Range", torqueRange), 0.0f);
+            }
+
+            if (GUILayout.Button("Copy to All Propellers in Vessel"))
+            {
+                var vesselRigidbody = propeller.GetComponentInParent<Rigidbody>();
+                var udonBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(propeller);
+                foreach (var (p, u) in vesselRigidbody.GetUdonSharpComponentsInChildren<ScrewPropeller>(true).Select(p => (p, u: UdonSharpEditorUtility.GetBackingUdonBehaviour(p))).Where(t => t.u != udonBehaviour))
+                {
+                    Undo.RecordObject(u, "Copy Propeller Settings");
+                    foreach (var symbolName in udonBehaviour.publicVariables.VariableSymbols)
+                    {
+                        if (udonBehaviour.TryGetProgramVariable(symbolName, out var value))
+                        {
+                            u.SetProgramVariable(symbolName, value);
+                        }
+                    }
+                    EditorUtility.SetDirty(u);
+                }
             }
         }
     }

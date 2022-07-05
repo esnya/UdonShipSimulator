@@ -1,8 +1,5 @@
-﻿
-using System;
-using UdonSharp;
+﻿using UdonSharp;
 using UnityEngine;
-using InariUdon.Driver;
 using JetBrains.Annotations;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
@@ -33,7 +30,7 @@ namespace USS2
 
         /// <summary>
         /// Thrust coefficient with J = 0.
-        /// </summary>
+        /// /// </summary>
         public float tAlpha = 0.4f;
 
         /// <summary>
