@@ -61,7 +61,7 @@ namespace USS2
         {
             if (Networking.IsOwner(gameObject))
             {
-                N = screwPropeller.n;
+                N = screwPropeller.shaft.n;
             }
 
             Angle += N * 360.0f * Time.deltaTime;

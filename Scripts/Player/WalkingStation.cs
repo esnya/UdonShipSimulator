@@ -28,7 +28,7 @@ namespace USS2
         /// <summary>
         /// Maximum height to climbalbe.
         /// </summary>
-        public float stepHeight = 0.8f;
+        public float stepHeight = 0.4f;
 
         /// <summary>
         /// Radius of player collider. Half width of miminum hole to pass.
@@ -44,7 +44,7 @@ namespace USS2
         /// <summary>
         /// Walk speed.
         /// </summary>
-        public float walkSpeed = 1.0f;
+        public float walkSpeed = 1.5f;
 
         /// <summary>
         /// Rotation speed.
@@ -149,7 +149,7 @@ namespace USS2
             if (!seated) return;
 
             var moveInput = Vector3.right * Input.GetAxis("Horizontal") + Vector3.forward * Input.GetAxis("Vertical");
-            if (moveInput.sqrMagnitude > 0.0f) Move(moveInput * walkSpeed);
+            if (moveInput.sqrMagnitude > 0.0f) Move(moveInput);
 
             var rotationInput = Input.GetAxisRaw("Oculus_CrossPlatform_SecondaryThumbstickHorizontal") + (Networking.LocalPlayer.IsUserInVR() ? 0.0f : Input.GetAxisRaw("Mouse X"));
             if (!Mathf.Approximately(rotationInput, 0)) Rotate(rotationInput * rotationSpeed);
@@ -192,14 +192,14 @@ namespace USS2
         private float GetPlayerSpeed()
         {
             var localPlayer = Networking.LocalPlayer;
-            return (localPlayer.IsUserInVR() || Input.GetKey(KeyCode.LeftShift)) ? localPlayer.GetRunSpeed() : localPlayer.GetWalkSpeed();
+            return ((localPlayer.IsUserInVR() || Input.GetKey(KeyCode.LeftShift)) ? localPlayer.GetRunSpeed() : localPlayer.GetWalkSpeed()) * walkSpeed;
         }
 
-        private void Move(Vector3 value)
+        private void Move(Vector3 direction)
         {
             if (!seated) return;
-            var xzVelocity = Vector3.ProjectOnPlane(Networking.LocalPlayer.GetTrackingData(VRCPlayerApi.TrackingDataType.Head).rotation * value, Vector3.up).normalized * value.magnitude * GetPlayerSpeed();
-            seatVelocity = Vector3.Lerp(seatVelocity, xzVelocity + Vector3.Project(seatVelocity, Vector3.up), onGround ? 1.0f : Time.deltaTime);
+            var xzVelocity = Vector3.ProjectOnPlane(Networking.LocalPlayer.GetTrackingData(VRCPlayerApi.TrackingDataType.Head).rotation * direction, transform.up).normalized * GetPlayerSpeed();
+            seatVelocity = Vector3.Lerp(seatVelocity, xzVelocity + Vector3.Project(seatVelocity, transform.up), onGround ? 1.0f : Time.deltaTime);
         }
 
         private void Rotate(float speed)

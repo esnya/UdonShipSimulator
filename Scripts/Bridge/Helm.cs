@@ -1,7 +1,9 @@
 
+using JetBrains.Annotations;
 using UdonSharp;
 using UdonToolkit;
 using UnityEngine;
+using VRC.SDKBase;
 
 namespace USS2
 {
@@ -45,13 +47,20 @@ namespace USS2
             Angle = 0.0f;
         }
 
-        public void IncreaseAngle()
+        [PublicAPI] public void _TakeOwnership()
         {
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+        }
+
+        [PublicAPI] public void IncreaseAngle()
+        {
+            _TakeOwnership();
             Angle += increaseStep;
         }
 
-        public void DecreaseAngle()
+        [PublicAPI] public void DecreaseAngle()
         {
+            _TakeOwnership();
             Angle -= increaseStep;
         }
 

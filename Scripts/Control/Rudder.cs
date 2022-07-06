@@ -47,6 +47,7 @@ namespace USS2
         private float seaLevel;
         private Vector3 localForce;
         private ScrewPropeller[] propellers;
+        private Shaft[] propellerShafts;
 
         private void Start()
         {
@@ -60,6 +61,11 @@ namespace USS2
             }
 
             propellers = vesselRigidbody.GetComponentsInChildren<ScrewPropeller>(true);
+            propellerShafts = new Shaft[propellers.Length];
+            for (var i = 0; i < propellers.Length; i++)
+            {
+                propellerShafts[i] = propellers[i].shaft;
+            }
 
             surfaceArea = length * depth;
             forceMultiplier = 0.5f * rho * surfaceArea * GetCfnArFactor();
@@ -103,9 +109,9 @@ namespace USS2
             return 6.13f * ar / (ar + 2.25f);
         }
 
-        private Vector3 GetPropellerDeltaUS(Vector3 u, ScrewPropeller propeller)
+        private Vector3 GetPropellerDeltaUS(Vector3 u, ScrewPropeller propeller, Shaft shaft)
         {
-            var n = propeller.n;
+            var n = shaft.n;
             var direction = propeller.transform.forward;
             var up = Vector3.Dot(u, direction);
             var p = propeller.pitch;
@@ -118,7 +124,7 @@ namespace USS2
             var result = Vector3.zero;
             for (var i = 0; i < propellers.Length; i++)
             {
-                result += GetPropellerDeltaUS(u, propellers[i]);
+                result += GetPropellerDeltaUS(u, propellers[i], propellerShafts[i]);
             }
             return result;
         }
@@ -151,13 +157,14 @@ namespace USS2
                     Gizmos.color = Color.cyan;
                     foreach (var propeller in propellers)
                     {
-                        var dur = GetPropellerDeltaUS(u, propeller);
+                        var shaft = propeller.shaft;
+                        var dur = GetPropellerDeltaUS(u, propeller, shaft);
                         Gizmos.DrawRay(Vector3.zero, transform.InverseTransformVector(dur));
 
                         var p = propeller.pitch;
                         var direction = propeller.transform.forward;
                         var up = Vector3.Dot(u, direction);
-                        var n = propeller.n;
+                        var n = shaft.n;
                         var du = Mathf.Pow(Mathf.Abs(up), 1.0f - 0.5f * k) * Mathf.Pow(Mathf.Abs(n) * p, 0.5f * k) - up;
 
                         Handles.Label(transform.InverseTransformPoint(propeller.transform.position), $"UP:\t{up:F2}m/s\nnP:\t{n * p:F2}\nUS/UP:\t{du:F4}\nΔUR:\t{dur.magnitude:F2}m/s");

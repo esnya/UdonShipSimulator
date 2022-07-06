@@ -1,12 +1,14 @@
 ﻿
+using JetBrains.Annotations;
 using UdonSharp;
 using UdonToolkit;
 using UnityEngine;
+using VRC.SDKBase;
 
 namespace USS2
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
-    public class Governor : UdonSharpBehaviour
+    public class SteamValve : UdonSharpBehaviour
     {
         public SteamTurbine turbine;
         [SerializeField][UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(Value))] private float _value;
@@ -21,7 +23,7 @@ namespace USS2
             get => _value;
             set
             {
-                _value = Mathf.Clamp(value, -1.0f, 1.0f);
+                _value = Mathf.Clamp01(value);
                 if (turbine) turbine.input = _value;
                 for (var i = 0; i < visualTransforms.Length; i++)
                 {
@@ -43,13 +45,20 @@ namespace USS2
             Value = 0.0f;
         }
 
-        public void Increase()
+        [PublicAPI] public void _TakeOwnership()
         {
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+        }
+
+        [PublicAPI] public void Increase()
+        {
+            _TakeOwnership();
             Value += increaseStep;
         }
 
-        public void Decrease()
+        [PublicAPI] public void Decrease()
         {
+            _TakeOwnership();
             Value -= increaseStep;
         }
     }

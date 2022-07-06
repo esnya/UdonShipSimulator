@@ -24,32 +24,18 @@ namespace USS2
         [Min(0.0f)] public float minimumPower = 1.92e+07f * 0.1f;
 
         /// <summary>
-        /// Maximum power for reverse in watts.
+        /// Is reversed.
         /// </summary>
-        [Min(0.0f)] public float reversePower = 1.92e+07f * 0.5f;
-
-        /// <summary>
-        /// Resistance of rotation such as flywheel.
-        /// </summary>
-        [Min(1.0f)] public float shaftMomentOfInertia = 1000000.0f;
+        public bool reversed;
 
         [Header("Output")]
-        [NotNull] public UdonSharpBehaviour shaft;
-        [NotNull] public string shaftRevolutionVariable = "n";
-        [NotNull] public string shaftLoadVariable = "propellerLoad";
-        [NotNull] public string efficiencyVariable = "efficiency";
+        [NotNull] public Shaft shaft;
 
         [Header("Input")]
         /// <summary>
         /// Normalized steam input in -1.0 to 1.0.
         /// </summary>
-        [Range(-1.0f, 1.0f)] public float input;
-
-        [Header("State")]
-        /// <summary>
-        /// Revolution of shaft in 1/s.
-        /// </summary>
-        public float n;
+        [Range(0, 1.0f)] public float input;
 
         private float powerToTorque;
 
@@ -60,27 +46,15 @@ namespace USS2
 
         public void Update()
         {
-            var qr = (float)shaft.GetProgramVariable(shaftLoadVariable);
-            var qa = GetAvailableTorque(input);
-            var eta = (float)shaft.GetProgramVariable(efficiencyVariable);
-            n += (qa * eta - qr) * Time.deltaTime / shaftMomentOfInertia;
-
-            if (float.IsInfinity(n) || float.IsNaN(n)) n = 0.0f;
-            shaft.SetProgramVariable(shaftRevolutionVariable, n);
-        }
-
-        public void _USS_Respawned()
-        {
-            n = 0.0f;
+            shaft.inputTorque += GetAvailableTorque(input);
         }
 
         [PublicAPI]
         public float GetAvailableTorque(float i)
         {
-            var reversed = i < 0.0f;
-            var p = (reversed ? reversePower : power) * i;
-            if (Mathf.Abs(p) < minimumPower) return 0.0f;
-            return p * powerToTorque;
+            var p = power * i;
+            if (p < minimumPower) return 0.0f;
+            return p * powerToTorque * (reversed ? -1.0f : 1.0f);
         }
     }
 }

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5544068051143812198}
   - component: {fileID: 5544068051143812197}
   - component: {fileID: 1883995754813387178}
+  - component: {fileID: 1194114881410501696}
   m_Layer: 0
   m_Name: WalkableStationPool (16)
   m_TagString: Untagged
@@ -87,6 +88,19 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 2, y: 4, z: 1}
   m_Center: {x: 1, y: -1, z: -1}
+--- !u!65 &1194114881410501696
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5544068051143812199}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 2, y: 4, z: 1}
+  m_Center: {x: 1, y: -1, z: 10.5}
 --- !u!1001 &2269470438851523266
 PrefabInstance:
   m_ObjectHideFlags: 0

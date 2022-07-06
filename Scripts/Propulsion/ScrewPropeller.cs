@@ -67,12 +67,12 @@ namespace USS2
         /// </summary>
         public int blades = 3;
 
+        [Header("Input")]
+        [NotNull] public Shaft shaft;
+
         [Header("Runtime Status")]
         [NotNull] public AnimationCurve etaH = AnimationCurve.Constant(0.0f, 100.0f, 1.0f);
         public float etaR = 0.98f;
-        public float n;
-        public float propellerLoad;
-        public float efficiency;
 
         private Rigidbody vesselRigidbody;
         private float localForce;
@@ -107,8 +107,10 @@ namespace USS2
             var speed = Vector3.Dot(vesselRigidbody.velocity, transform.forward);
             var vs = Mathf.Abs(speed);
 
-            propellerLoad = GetPropellerTorque(vs, n);
-            efficiency = GetEfficiency(vs);
+            var n = shaft.n;
+            shaft.loadTorque += GetPropellerTorque(vs, n);
+            shaft.efficiency *= GetEfficiency(vs);
+
             localForce = GetPropellerThrust(vs, n) * (n < 0 ? reverseEfficiency : 1.0f);
         }
 
@@ -167,6 +169,7 @@ namespace USS2
                 var speed = Vector3.Dot(vesselRigidbody.velocity, transform.forward);
                 var vs = speed;
 
+                var n = shaft.n;
                 var qr = GetPropellerTorque(vs, n);
 
                 Gizmos.color = Color.white;
