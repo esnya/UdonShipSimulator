@@ -13,6 +13,7 @@ namespace USS2
         public SteamTurbine turbine;
         [SerializeField][UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(Value))] private float _value;
         public float increaseStep = 0.05f;
+        public float fastIncreaseStep = 0.05f;
 
         [ListView("Visual Transforms")] public Transform[] visualTransforms = { };
         [ListView("Visual Transforms")] public float[] rotationScales = { };
@@ -60,6 +61,24 @@ namespace USS2
         {
             _TakeOwnership();
             Value -= increaseStep;
+        }
+
+        [PublicAPI] public void IncreaseFast()
+        {
+            _TakeOwnership();
+            Value += fastIncreaseStep;
+        }
+
+        [PublicAPI] public void DecreaseFast()
+        {
+            _TakeOwnership();
+            Value -= fastIncreaseStep;
+        }
+
+        [PublicAPI] public void Set0()
+        {
+            _TakeOwnership();
+            Value = 0;
         }
     }
 }

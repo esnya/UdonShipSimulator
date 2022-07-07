@@ -13,6 +13,7 @@ namespace USS2
         [Range(0.0f, 90.0f)] public float maxAngle = 30.0f;
         public Transform rudderTransform;
         public float increaseStep = 0.033333333f;
+        public float fastIncreaseStep = 2.0f;
 
         [ListView("Visual Transforms")] public Transform[] visualTransforms = { };
         [ListView("Visual Transforms")] public float[] rotationScales = { };
@@ -64,5 +65,23 @@ namespace USS2
             Angle -= increaseStep;
         }
 
+
+        [PublicAPI] public void IncreaseFast()
+        {
+            _TakeOwnership();
+            Angle += fastIncreaseStep;
+        }
+
+        [PublicAPI] public void DecreaseFast()
+        {
+            _TakeOwnership();
+            Angle -= fastIncreaseStep;
+        }
+
+        [PublicAPI] public void Set0()
+        {
+            _TakeOwnership();
+            Angle = 0;
+        }
     }
 }
