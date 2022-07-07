@@ -5,7 +5,7 @@ using VRC.SDKBase;
 namespace USS2
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
-    public class ScrewPropellerAnimator : UdonSharpBehaviour
+    public class ScrewPropellerEffect : UdonSharpBehaviour
     {
         public ScrewPropeller screwPropeller;
         public Vector3 axis = Vector3.forward;

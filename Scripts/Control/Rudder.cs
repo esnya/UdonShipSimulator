@@ -158,6 +158,7 @@ namespace USS2
                     foreach (var propeller in propellers)
                     {
                         var shaft = propeller.shaft;
+                        if (shaft == null) continue;
                         var dur = GetPropellerDeltaUS(u, propeller, shaft);
                         Gizmos.DrawRay(Vector3.zero, transform.InverseTransformVector(dur));
 
