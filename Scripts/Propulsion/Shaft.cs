@@ -1,6 +1,7 @@
 using System;
 using UdonSharp;
 using UnityEngine;
+using VRC.SDKBase;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
 using UdonSharpEditor;
@@ -8,7 +9,7 @@ using UdonSharpEditor;
 
 namespace USS2
 {
-    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
     public class Shaft : UdonSharpBehaviour
     {
         /// <summary>
@@ -33,11 +34,14 @@ namespace USS2
         [Range(2.0f, 4.0f)] public float appendageResistanceFactor = 2.0f;
 
         [Header("Runtime Parameters")]
-        public float n;
-        public float inputTorque;
-        public float loadTorque;
-        public float efficiency = 1.0f;
+        [UdonSynced(UdonSyncMode.Smooth)][NonSerialized] public float n;
+        [NonSerialized] public float inputTorque;
+        [NonSerialized] public float loadTorque;
+        [NonSerialized] public float efficiency = 1.0f;
         [NonSerialized] public float surfaceArea;
+        [UdonSynced(UdonSyncMode.Smooth)][NonSerialized] public float currentInputTorque;
+        [UdonSynced(UdonSyncMode.Smooth)][NonSerialized] public float currentLoadTorque;
+        [UdonSynced(UdonSyncMode.Smooth)][NonSerialized] public float currentEfficiency;
 
         private void Start()
         {
@@ -46,8 +50,17 @@ namespace USS2
 
         private void LateUpdate()
         {
+            if (Networking.IsOwner(gameObject)) Owner_LateUpdate();
+        }
+
+        private void Owner_LateUpdate()
+        {
             n += (inputTorque * efficiency - loadTorque) * Time.deltaTime / momentOfInertia;
             if (float.IsInfinity(n) || float.IsNaN(n)) n = 0.0f;
+
+            currentInputTorque = inputTorque;
+            currentLoadTorque = loadTorque;
+            currentEfficiency = efficiency;
 
             inputTorque = 0;
             loadTorque = 0;

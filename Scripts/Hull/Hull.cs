@@ -3,6 +3,7 @@ using System;
 using UdonSharp;
 using UnityEngine;
 using UdonShipSimulator;
+using VRC.SDKBase;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
 using UnityEditor;
@@ -34,6 +35,7 @@ namespace USS2
 
         [Header("Workarounds")]
         public float verticalDrag = 0.01f;
+        public float pitchDrag = 0.1f;
 
         private float seaLevel;
         private AnimationCurve[] crossSectionAreaByDraughtProfiles;
@@ -49,11 +51,12 @@ namespace USS2
         private Vector3[] blockLocalForceList;
         private bool initialized;
         private Rigidbody vesselRigidbody;
-        [NonSerialized] public Ocean ocean;
+        private Ocean ocean;
         private AnimationCurve forwardCTProfile;
         private AnimationCurve sideCTProfile;
         private AnimationCurve verticalCTProfile;
         private UdonSharpBehaviour[] appendages;
+        private bool isOwner;
 
         private void Start()
         {
@@ -63,7 +66,13 @@ namespace USS2
 
         private void FixedUpdate()
         {
+            if (isOwner) Owner_FixedUpdate();
+        }
+
+        private void Owner_FixedUpdate()
+        {
             if (!vesselRigidbody) return;
+
             vesselRigidbody.velocity = Vector3.Scale(vesselRigidbody.velocity, Vector3.one - Vector3.up * verticalDrag * Time.fixedDeltaTime);
 
             var gravity = Physics.gravity;
@@ -83,6 +92,12 @@ namespace USS2
         {
             if (!initialized) return;
 
+            isOwner = Networking.IsOwner(vesselRigidbody.gameObject);
+            if (isOwner) Owner_Update();
+        }
+
+        private void Owner_Update()
+        {
             var velocity = vesselRigidbody.velocity;
             var angularVelocity = vesselRigidbody.angularVelocity;
             var centerOfMass = vesselRigidbody.worldCenterOfMass;

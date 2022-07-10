@@ -123,6 +123,8 @@ namespace USS2
 
         public override void OnInspectorGUI()
         {
+            if (UdonSharpGUI.DrawDefaultUdonSharpBehaviourHeader(target)) return;
+
             base.OnInspectorGUI();
 
             var propeller = target as ScrewPropeller;

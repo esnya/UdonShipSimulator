@@ -25,7 +25,7 @@ namespace USS2
             set
             {
                 _value = Mathf.Clamp01(value);
-                if (turbine) turbine.input = _value;
+                if (turbine) turbine.steamValveValue = _value;
                 for (var i = 0; i < visualTransforms.Length; i++)
                 {
                     var t = visualTransforms[i];
@@ -38,7 +38,7 @@ namespace USS2
 
         private void Start()
         {
-            Value = turbine ? turbine.input : Value;
+            Value = turbine ? turbine.steamValveValue : Value;
         }
 
         public void _USS_Respawned()

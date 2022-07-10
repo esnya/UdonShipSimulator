@@ -1,6 +1,8 @@
 ﻿using UdonSharp;
 using UnityEngine;
 using JetBrains.Annotations;
+using VRC.SDKBase;
+using System;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
 using UnityEditor;
@@ -67,17 +69,25 @@ namespace USS2
         /// </summary>
         public int blades = 3;
 
+        [Header("Effects")]
+        public Transform visualTransform;
+        public Vector3 visualAxis = Vector3.forward;
+        public ParticleSystem particle;
+        public float particleMinRPM = 60.0f;
+
         [Header("Input")]
         [NotNull] public Shaft shaft;
 
-        [Header("Runtime Status")]
-        [NotNull] public AnimationCurve etaH = AnimationCurve.Constant(0.0f, 100.0f, 1.0f);
-        public float etaR = 0.98f;
+        [NotNull][NonSerialized] public AnimationCurve etaH = AnimationCurve.Constant(0.0f, 100.0f, 1.0f);
+        [NonSerialized] public float etaR = 0.98f;
 
         private Rigidbody vesselRigidbody;
         private float localForce;
         private float rho = Ocean.OceanRho;
         private float seaLevel;
+        private bool isOwner;
+        private float angle;
+        private float rateOverTimeMultiplier;
 
         private void Start()
         {
@@ -89,14 +99,46 @@ namespace USS2
                 rho = ocean.rho;
                 seaLevel = ocean.transform.position.y;
             }
+
+            if (particle)
+            {
+                rateOverTimeMultiplier = particle.emission.rateOverTimeMultiplier;
+            }
         }
 
         private void FixedUpdate()
+        {
+            if (isOwner) Owner_FixedUpdate();
+        }
+
+        private void Owner_FixedUpdate()
         {
             vesselRigidbody.AddForceAtPosition(transform.forward * localForce, transform.position);
         }
 
         private void Update()
+        {
+            isOwner = Networking.IsOwner(gameObject);
+            if (isOwner) Owner_Update();
+
+            var n = shaft.n;
+            if (visualTransform)
+            {
+                angle += Time.deltaTime * n * 360.0f % 360.0f;
+                visualTransform.localRotation = Quaternion.AngleAxis(angle, visualAxis);
+            }
+
+            if (particle)
+            {
+                var main = particle.main;
+                main.startSpeedMultiplier = n * pitch;
+
+                var emission = particle.emission;
+                emission.rateOverTimeMultiplier = rateOverTimeMultiplier * Mathf.SmoothStep(0.0f, particleMinRPM / 60.0f, Mathf.Abs(n));
+            }
+        }
+
+        private void Owner_Update()
         {
             if (transform.position.y > seaLevel)
             {
@@ -117,6 +159,11 @@ namespace USS2
         public float GetEfficiency(float v)
         {
             return shaftEfficiency * etaR * (etaH == null ? 1.0f : etaH.Evaluate(Mathf.Abs(v)));
+        }
+
+        public void _USS_Respawned()
+        {
+            angle = 0.0f;
         }
 
         private float GetForceOrTorque(float va, float n, float a, float b, float d, float rho, float dd)
@@ -153,6 +200,7 @@ namespace USS2
         {
             return j * GetKT(j) / (2.0f * Mathf.PI * GetKQ(j));
         }
+
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
