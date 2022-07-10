@@ -10,15 +10,56 @@ namespace USS2
     [UdonBehaviourSyncMode(BehaviourSyncMode.Continuous)]
     public class Valve : UdonSharpBehaviour
     {
+        /// <summary>
+        /// Target udon behaviour.
+        /// </summary>
         [NotNull] public UdonSharpBehaviour target;
+
+        /// <summary>
+        /// Target variable name of target.
+        /// </summary>
         [Popup("programVariable", "@target")] public string variableName = "valveValue";
-        [SerializeField][UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(Value))] private float _value;
+
+        /// <summary>
+        /// Initial value. 0 to 1. Target varible will be set as (value + valueBias) * valueMultiplier.
+        /// </summary>
+        [SerializeField][UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(Value))][Range(0.0f, 1.0f)] private float _value;
+
+        /// <summary>
+        /// Bias of value.
+        /// </summary>
+        [Range(0.0f, 1.0f)] public float valueBias = 0.0f;
+
+        /// <summary>
+        /// Multiplier of value.
+        /// </summary>
+        public float valueMultiplier = 1.0f;
+
+        /// <summary>
+        /// Step for Increase/Decrease.
+        /// </summary>
         public float increaseStep = 1.0f / 720.0f;
+
+        /// <summary>
+        /// Step for FastIncrease/FastDecrease.
+        /// </summary>
         public float fastIncreaseStep = 0.05f;
 
+        /// <summary>
+        /// Viaual transform to animate such as handle.
+        /// </summary>
         [ListView("Visual Transforms")] public Transform[] visualTransforms = { };
+
+        /// <summary>
+        /// Remapping scale for visual transforms.
+        /// </summary>
         [ListView("Visual Transforms")] public float[] rotationScales = { };
+
+        /// <summary>
+        /// Rotation axis to animate visual transform.
+        /// </summary>
         [ListView("Visual Transforms")] public Vector3[] rotationAxises = { };
+        private float initialValue;
 
         private float Value
         {
@@ -26,7 +67,7 @@ namespace USS2
             set
             {
                 _value = Mathf.Clamp01(value);
-                if (target) target.SetProgramVariable(variableName, _value);
+                if (target) target.SetProgramVariable(variableName, (_value + valueBias) * valueMultiplier);
                 for (var i = 0; i < visualTransforms.Length; i++)
                 {
                     var t = visualTransforms[i];
@@ -39,12 +80,13 @@ namespace USS2
 
         private void Start()
         {
-            Value = target ? (float)target.GetProgramVariable(variableName) : Value;
+            initialValue = Value;
+            _USS_Respawned();
         }
 
         public void _USS_Respawned()
         {
-            Value = 0.0f;
+            Value = initialValue;
         }
 
         [PublicAPI] public void _TakeOwnership()
