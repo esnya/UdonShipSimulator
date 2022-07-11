@@ -36,6 +36,7 @@ namespace USS2
         /// Current azimuth.
         /// </summary>
         [NonSerialized][UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(Azimuth))] public float _azimuth;
+        private float initialAzimuth;
 
         /// <summary>
         /// Current azimuth.
@@ -50,6 +51,8 @@ namespace USS2
 
         private void Start()
         {
+            var worldAxis = transform.TransformDirection(axis);
+            initialAzimuth = Vector3.SignedAngle(Vector3.ProjectOnPlane(transform.parent.forward, worldAxis), Vector3.ProjectOnPlane(transform.forward, worldAxis), worldAxis);
             _USS_Respawned();
         }
 
@@ -65,8 +68,8 @@ namespace USS2
 
         public void _USS_Respawned()
         {
-            targetAzimuth = 0.0f;
-            Azimuth = 0.0f;
+            targetAzimuth = initialAzimuth;
+            Azimuth = initialAzimuth;
         }
     }
 }
