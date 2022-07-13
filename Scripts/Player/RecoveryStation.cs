@@ -20,6 +20,10 @@ namespace USS2
             if (player.isLocal) station.ExitStation(player);
         }
 
+        public override void OnStationExited(VRCPlayerApi player)
+        {
+        }
+
         public void EnterStation()
         {
             station.UseStation(Networking.LocalPlayer);

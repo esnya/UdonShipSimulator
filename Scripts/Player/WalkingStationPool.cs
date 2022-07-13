@@ -65,8 +65,11 @@ namespace USS2
 
             SetStationActive(index, true);
 
+
             var station = walkingStations[index];
-            station.transform.SetPositionAndRotation(transform.position, transform.rotation);
+            Networking.SetOwner(Networking.LocalPlayer, station.gameObject);
+            station.SeatPosition = transform.position;
+            station.SeatRotation = transform.rotation.eulerAngles.y;
             station._EnterStation();
         }
 

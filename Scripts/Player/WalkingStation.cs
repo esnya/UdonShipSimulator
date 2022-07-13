@@ -57,24 +57,24 @@ namespace USS2
         public float exitCounter = 10;
 
         [UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(SeatLocalPosition))] private Vector3 _seatLocalPosition;
-        private Vector3 SeatLocalPosition
+        public Vector3 SeatLocalPosition
         {
             get => _seatLocalPosition;
-            set => _seatLocalPosition = transform.localPosition = value;
+            private set => _seatLocalPosition = transform.localPosition = value;
         }
-        private Vector3 SeatPosition
+        public Vector3 SeatPosition
         {
             get => transform.position;
             set => SeatLocalPosition = transform.parent.InverseTransformPoint(value);
         }
 
         [UdonSynced(UdonSyncMode.Smooth)][FieldChangeCallback(nameof(SeatLocalRotation))] private float _setLocalRotation;
-        private float SeatLocalRotation
+        public float SeatLocalRotation
         {
             get => _setLocalRotation;
-            set => transform.localEulerAngles = Vector3.up * (_setLocalRotation = value % 360.0f);
+            private set => transform.localEulerAngles = Vector3.up * (_setLocalRotation = value % 360.0f);
         }
-        private float SeatRotation
+        public float SeatRotation
         {
             get => SeatLocalRotation + transform.parent.eulerAngles.y;
             set => SeatLocalRotation = value - transform.parent.eulerAngles.y;
@@ -164,6 +164,8 @@ namespace USS2
                 SeatLocalPosition = Vector3.zero;
                 SeatLocalRotation = 0.0f;
                 exitCount = 0;
+
+                _SendCustomEventToVessel("_USS_Entered");
             }
         }
 
@@ -172,16 +174,16 @@ namespace USS2
             if (player.isLocal)
             {
                 seated = false;
-                if (recoveryStation)
-                {
-                    recoveryStation.transform.SetPositionAndRotation(SeatPosition, Quaternion.AngleAxis(SeatRotation, Vector3.up));
-                    recoveryStation.EnterStation();
-                }
+                if (recoveryStation) recoveryStation.EnterStation();
                 if (pool) pool._ReturnStation(this);
 
-                SeatLocalPosition = Vector3.zero;
-                SeatLocalRotation = 0.0f;
+                _SendCustomEventToVessel("_USS_Exited");
             }
+        }
+
+        public override void OnOwnershipTransferred(VRCPlayerApi player)
+        {
+            if (seated && !player.isLocal) _ExitStation();
         }
 
         public override void InputJump(bool value, UdonInputEventArgs args)
@@ -212,6 +214,15 @@ namespace USS2
             if (!onGround) return;
             onGround = false;
             seatVelocity += Vector3.up * Networking.LocalPlayer.GetJumpImpulse();
+        }
+
+        private void _SendCustomEventToVessel(string eventName)
+        {
+            var vesselRigidbody = GetComponentInParent<Rigidbody>();
+            if (!vesselRigidbody) return;
+            var vessel = vesselRigidbody.GetComponent<Vessel>();
+            if (!vessel) return;
+            vessel._SendCustomEventToChildren(eventName);
         }
 
         public void _EnterStation()
