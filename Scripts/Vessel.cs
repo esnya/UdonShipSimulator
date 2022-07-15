@@ -15,9 +15,10 @@ namespace USS2
         public const string EVENT_TakeOwnership = "_USS_TakeOwnership";
         public const string EVENT_LoseOwnership = "_USS_LoseOwnership";
         public const string EVENT_Respawned = "_USS_Respawned";
+        public const string EVENT_Entered = "_USS_Entered";
+        public const string EVENT_Exited = "_USS_Exited";
 
         public bool freezeOnStart = true;
-        public GameObject ownerOnly;
 
         private Rigidbody vesselRigidbody;
         private bool _isOwner;
@@ -36,7 +37,6 @@ namespace USS2
             {
                 _isOwner = value;
                 _SendCustomEventToChildren(value ? EVENT_TakeOwnership : EVENT_LoseOwnership);
-                if (ownerOnly) ownerOnly.SetActive(value);
             }
         }
 

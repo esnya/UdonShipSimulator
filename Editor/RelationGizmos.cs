@@ -29,10 +29,8 @@ namespace USS2
                 { typeof(SteamTurbine), Resources.Load<Texture>("Icons/SteamTurbine_Outline") },
                 { typeof(SteamPipe), Resources.Load<Texture>("Icons/SteamPipe_Outline") },
                 { typeof(Shaft), Resources.Load<Texture>("Icons/Shaft_Outline") },
-                { typeof(Helm), Resources.Load<Texture>("Icons/Helm_Outline") },
-                { typeof(SteamValve), Resources.Load<Texture>("Icons/Valvue_Outline") },
                 { typeof(SteamBoiler), Resources.Load<Texture>("Icons/Boiler_Outline") },
-                { typeof(Valve), Resources.Load<Texture>("Icons/Valvue_Outline") },
+                { typeof(AnalogValueController), Resources.Load<Texture>("Icons/Valvue_Outline") },
             };
         }
 
