@@ -68,7 +68,7 @@ namespace USS2
 
         private void UpdateProfiles(Hull hull)
         {
-            hull.UpdateProfiles();
+            hull._USS_VesselStart();
             ocean = hull.GetComponentInParent<Rigidbody>().GetComponentInParent<Ocean>() ?? new Ocean();
             surfaceAreaByDraughtProfile = hull.GetSurfaceAreaByDraughtProfile();
             volumeByDraughtProfile = hull.GetVolumeByDraughtProfile();
@@ -375,7 +375,7 @@ namespace USS2
             }
             EditorGUILayout.Space();
 
-            if (GUILayout.Button("Update Profiles")) hull.UpdateProfiles();
+            if (GUILayout.Button("Update Profiles")) hull._USS_VesselStart();
         }
 
         private float GetSpeedMultiplier(SpeedUnit speedUnit)

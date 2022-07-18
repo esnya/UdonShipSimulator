@@ -32,12 +32,15 @@ namespace USS2
         [Range(1, 64)] public int beamSteps = 2;
         [Range(1, 64)] public int curveProfilingSteps = 32;
         [Range(0.0f, 1.0f)] public float beamDraughtSamplingCurve = 0.1f;
+        [Min(1)] public int flowDetectionInterval = 10;
+        public LayerMask flowLayerMask = 1 << 18; // MirrorReflection
 
         [Header("Workarounds")]
         public float verticalDrag = 0.01f;
         public float pitchDrag = 0.1f;
 
-        private float seaLevel;
+        private const int MAX_FLOW_COLLIDERS = 16;
+
         private AnimationCurve[] crossSectionAreaByDraughtProfiles;
         private int blocks;
         private float db;
@@ -49,100 +52,26 @@ namespace USS2
         private AnimationCurve[] blockVolumeProfiles;
         private AnimationCurve[] blockSurfaceProfiles;
         private Vector3[] blockLocalForceList;
+        private int flowDetectionIntervalOffset;
+        private Collider[] flowColliders;
         private bool initialized;
         private Rigidbody vesselRigidbody;
+        private Vessel vessel;
         private Ocean ocean;
         private AnimationCurve forwardCTProfile;
         private AnimationCurve sideCTProfile;
         private AnimationCurve verticalCTProfile;
         private UdonSharpBehaviour[] appendages;
         private bool isOwner;
+        private Vector3 flowVelocity;
 
-        private void Start()
-        {
-            UpdateProfiles();
-            initialized = true;
-        }
-
-        private void FixedUpdate()
-        {
-            if (isOwner) Owner_FixedUpdate();
-        }
-
-        private void Owner_FixedUpdate()
-        {
-            if (!vesselRigidbody) return;
-
-            vesselRigidbody.velocity = Vector3.Scale(vesselRigidbody.velocity, Vector3.one - Vector3.up * verticalDrag * Time.fixedDeltaTime);
-
-            var gravity = Physics.gravity;
-
-            for (var index = 0; index < blocks; index++)
-            {
-                var force = GetBlockBuoyancy(index, gravity) - transform.TransformVector(blockLocalForceList[index]);
-                if (float.IsNaN(force.x))
-                {
-                    Debug.Log($"[{vesselRigidbody.gameObject.name}][{index}] fr={blockLocalForceList[index]}, fb={GetBlockBuoyancy(index, gravity)}");
-                }
-                vesselRigidbody.AddForceAtPosition(GetBlockBuoyancy(index, gravity) - transform.TransformVector(blockLocalForceList[index]), GetBlockCenterOfBuoyancy(index));
-            }
-        }
-
-        private void Update()
-        {
-            if (!initialized) return;
-
-            isOwner = Networking.IsOwner(vesselRigidbody.gameObject);
-            if (isOwner) Owner_Update();
-        }
-
-        private void Owner_Update()
-        {
-            var velocity = vesselRigidbody.velocity;
-            var angularVelocity = vesselRigidbody.angularVelocity;
-            var centerOfMass = vesselRigidbody.worldCenterOfMass;
-            var g = Physics.gravity.magnitude;
-
-            for (var index = 0; index < blocks; index++)
-            {
-                var bottomPoint = blockBottomPoints[index];
-                var p = transform.TransformPoint(bottomPoint);
-                var d = Mathf.Clamp(seaLevel - p.y, 0.0f, -bottomPoint.y);
-                var v = blockVolumeProfiles[index].Evaluate(d);
-
-                blockDraughts[index] = d;
-                blockBuoyancies[index] = rho * v;
-
-                if (d > 0)
-                {
-                    var s = blockSurfaceProfiles[index].Evaluate(d);
-                    var centerOfBuoyancy = p + transform.up * d;
-                    var blockLocalVelocity = transform.InverseTransformVector(velocity + Vector3.Cross(angularVelocity, centerOfBuoyancy - centerOfMass));
-
-                    blockLocalForceList[index] =
-                        Vector3.forward * EvaluateRegistanceForce(forwardCTProfile, length, s, blockLocalVelocity.z, g)
-                        + Vector3.right * EvaluateRegistanceForce(sideCTProfile, beam, s, blockLocalVelocity.x, g)
-                        + Vector3.up * EvaluateRegistanceForce(verticalCTProfile, d, s, blockLocalVelocity.y, g);
-                    if (float.IsNaN(blockLocalForceList[index].x))
-                    {
-                        Debug.Log($"[{vesselRigidbody.gameObject.name}][{index}] f={blockLocalForceList[index]}, b={bottomPoint}, p={p}, d={d}, v={v}, s={s}");
-                    }
-                }
-                else
-                {
-                    blockLocalForceList[index] = Vector3.zero;
-                }
-            }
-        }
-
-        [PublicAPI]
-        public void UpdateProfiles()
+        public void _USS_VesselStart()
         {
             vesselRigidbody = GetComponentInParent<Rigidbody>();
+            vessel = vesselRigidbody.GetComponent<Vessel>();
 
-            ocean = vesselRigidbody.GetComponentInParent<Ocean>();
+            ocean = vessel.ocean;
 
-            seaLevel = ocean ? ocean.transform.position.y : 0.0f;
             rho = ocean ? ocean.rho : 1025.0f;
             mu = ocean ? ocean.rho : 0.00122f;
 
@@ -196,6 +125,107 @@ namespace USS2
                 screwPropeller.etaH = GetScrewPropellerHullEfficiency(maxSpeed, screwPropeller.diameter);
                 screwPropeller.etaR = GetRelativeRotativeEfficiency(screwPropeller.pitch, screwPropeller.diameter);
             }
+
+            flowDetectionIntervalOffset = UnityEngine.Random.Range(0, flowDetectionInterval);
+
+            flowColliders = new Collider[MAX_FLOW_COLLIDERS];
+
+            initialized = true;
+        }
+
+        private void FixedUpdate()
+        {
+            if (!initialized) return;
+            if (isOwner) Owner_FixedUpdate();
+        }
+
+        private void Owner_FixedUpdate()
+        {
+            if (!initialized) return;
+
+            vesselRigidbody.velocity = Vector3.Scale(vesselRigidbody.velocity, Vector3.one - Vector3.up * verticalDrag * Time.fixedDeltaTime);
+
+            var gravity = Physics.gravity;
+
+            for (var index = 0; index < blocks; index++)
+            {
+                var force = GetBlockBuoyancy(index, gravity) - transform.TransformVector(blockLocalForceList[index]);
+                if (float.IsNaN(force.x))
+                {
+                    Debug.Log($"[{vesselRigidbody.gameObject.name}][{index}] fr={blockLocalForceList[index]}, fb={GetBlockBuoyancy(index, gravity)}");
+                }
+                vesselRigidbody.AddForceAtPosition(GetBlockBuoyancy(index, gravity) - transform.TransformVector(blockLocalForceList[index]), GetBlockCenterOfBuoyancy(index));
+            }
+        }
+
+        private void Update()
+        {
+            if (!initialized) return;
+
+            isOwner = Networking.IsOwner(vesselRigidbody.gameObject);
+            if (isOwner) Owner_Update();
+        }
+
+        private void Owner_Update()
+        {
+            if ((Time.renderedFrameCount + flowDetectionIntervalOffset) % flowDetectionInterval == 0)
+            {
+                var flow = DetectFlow();
+                flowVelocity = (flow && ocean) ? flow.transform.forward * flow.speed * ocean.tideFlow : Vector3.zero;
+            }
+
+            var velocity = vesselRigidbody.velocity - flowVelocity;
+            var angularVelocity = vesselRigidbody.angularVelocity;
+            var centerOfMass = vesselRigidbody.worldCenterOfMass;
+            var g = Physics.gravity.magnitude;
+            var seaLevel = vessel.seaLevel;
+
+            for (var index = 0; index < blocks; index++)
+            {
+                var bottomPoint = blockBottomPoints[index];
+                var p = transform.TransformPoint(bottomPoint);
+                var d = Mathf.Clamp(seaLevel - p.y, 0.0f, -bottomPoint.y);
+                var v = blockVolumeProfiles[index].Evaluate(d);
+
+                blockDraughts[index] = d;
+                blockBuoyancies[index] = rho * v;
+
+                if (d > 0)
+                {
+                    var s = blockSurfaceProfiles[index].Evaluate(d);
+                    var centerOfBuoyancy = p + transform.up * d;
+                    var blockLocalVelocity = transform.InverseTransformVector(velocity + Vector3.Cross(angularVelocity, centerOfBuoyancy - centerOfMass));
+
+                    blockLocalForceList[index] =
+                        Vector3.forward * EvaluateRegistanceForce(forwardCTProfile, length, s, blockLocalVelocity.z, g)
+                        + Vector3.right * EvaluateRegistanceForce(sideCTProfile, beam, s, blockLocalVelocity.x, g)
+                        + Vector3.up * EvaluateRegistanceForce(verticalCTProfile, d, s, blockLocalVelocity.y, g);
+                    if (float.IsNaN(blockLocalForceList[index].x))
+                    {
+                        Debug.Log($"[{vesselRigidbody.gameObject.name}][{index}] f={blockLocalForceList[index]}, b={bottomPoint}, p={p}, d={d}, v={v}, s={s}");
+                    }
+                }
+                else
+                {
+                    blockLocalForceList[index] = Vector3.zero;
+                }
+            }
+
+        }
+
+        private Flow DetectFlow()
+        {
+            var colliderCount = Physics.OverlapSphereNonAlloc(transform.position, Mathf.Max(Mathf.Max(length, depth), beam), flowColliders, flowLayerMask, QueryTriggerInteraction.Collide);
+
+            for (var i = 0; i < colliderCount; i++)
+            {
+                var collider = flowColliders[i];
+                if (!collider) continue;
+                var flow = collider.GetComponent<Flow>();
+                if (flow) return flow;
+            }
+
+            return null;
         }
 
         private UdonSharpBehaviour[] GetAppendages()

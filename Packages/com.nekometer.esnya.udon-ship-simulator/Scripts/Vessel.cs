@@ -20,6 +20,17 @@ namespace USS2
 
         public bool freezeOnStart = true;
 
+
+        /// <summary>
+        /// Ocean.
+        /// </summary>
+        public Ocean ocean;
+
+        /// <summary>
+        /// SeaLevel.
+        /// </summary>
+        public float seaLevel { get; private set; }
+
         private Rigidbody vesselRigidbody;
         private bool _isOwner;
         private UdonSharpBehaviour[] children;
@@ -28,7 +39,6 @@ namespace USS2
         private Vector3 initialPosition;
         private Quaternion initialRotation;
         private VRCObjectSync objectSync;
-        private object seaLevel;
 
         public bool IsOwner
         {
@@ -45,7 +55,7 @@ namespace USS2
             vesselRigidbody = GetComponent<Rigidbody>();
             objectSync = (VRCObjectSync)GetComponent(typeof(VRCObjectSync));
 
-            var ocean = GetComponentInParent<Ocean>();
+            ocean = gameObject.GetComponentInParent<Ocean>();
             if (ocean)
             {
                 seaLevel = ocean.transform.position.y;

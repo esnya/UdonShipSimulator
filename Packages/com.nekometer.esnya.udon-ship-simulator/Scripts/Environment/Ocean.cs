@@ -1,4 +1,6 @@
+using System;
 using UdonSharp;
+using UnityEngine;
 
 namespace USS2
 {
@@ -45,10 +47,45 @@ namespace USS2
         /// </summary>
         public float Myu => rho / mu;
 
+        /// <summary>
+        /// Normalized tide strength. +1.0 is maximum tied level, -1.0 is minimum tied level.
+        /// </summary>
+        [Range(-1.0f, 1.0f)] public float tide = 0.0f;
+
+        /// <summary>
+        /// Normalized tide flow strength. -1.0 to 1.0.
+        /// </summary>
+        [Range(-1.0f, 1.0f)] public float tideFlow = 0.0f;
+
+        /// <summary>
+        /// Enable automatically tide simulation.
+        /// </summary>
+        public bool autoTide = true;
+
+
+        /// <summary>
+        /// Initialize tide as random.
+        /// </summary>
+        public bool randomTide = true;
+
+        public float tideTime;
 
         private void Start()
         {
             enabled = false;
+
+            tide = randomTide ? UnityEngine.Random.Range(-1.0f, 1.0f) : 0.0f;
+            tideFlow = randomTide ? UnityEngine.Random.Range(-1.0f, 1.0f) : 0.0f;
+            tideTime = (randomTide ? UnityEngine.Random.Range(0.0f, 12.0f) : 0.0f) + (float)DateTime.UtcNow.TimeOfDay.TotalSeconds;
+        }
+
+        private void Update()
+        {
+            tideTime = (tideTime + Time.deltaTime) % 12.0f;
+
+            var w = Mathf.PI / 6.0f;
+            tide = Mathf.Sin(tideTime * w);
+            tideFlow = Mathf.Cos(tideTime * w);
         }
     }
 }
