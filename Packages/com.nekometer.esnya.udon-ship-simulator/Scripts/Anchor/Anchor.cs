@@ -3,6 +3,7 @@ using UnityEngine;
 using VRC.SDKBase;
 using JetBrains.Annotations;
 using UnityEngine.Assertions.Must;
+using System.Linq;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
 using UdonSharpEditor;
@@ -54,6 +55,11 @@ namespace USS2
         /// Extend or retract speed of windlass in m/s.
         /// </summary>
         public float windlassSpeed = 1.0f;
+
+        /// <summary>
+        /// Extend speed when brake off in m/s.
+        /// </summary>
+        public float brakeOffSpeed = 3.0f;
 
         [Header("Visuals")]
         /// <summary>
@@ -119,6 +125,8 @@ namespace USS2
         private float prevExtendedLength;
         private bool _lineRendererEnabled;
 
+        private float soundPitchMultiplier;
+
         private void Start()
         {
             vesselRigidbody = GetComponentInParent<Rigidbody>();
@@ -128,6 +136,10 @@ namespace USS2
             massPerMeter = Mathf.Pow(ringDiameter, 2.0f) * 208.0f;
 
             if (!windlassSound) windlassSound = GetComponentInChildren<AudioSource>();
+            if (windlassSound)
+            {
+                soundPitchMultiplier = windlassSound.pitch / windlassSpeed;
+            }
 
             if (lineRenderer = GetComponentInChildren<LineRenderer>())
             {
@@ -162,10 +174,10 @@ namespace USS2
 
         private void FixedUpdate()
         {
-            if (isOwner) Owner_FixedUpdate(Time.fixedDeltaTime);
+            if (isOwner) Owner_FixedUpdate();
         }
 
-        private void Owner_FixedUpdate(float deltaTime)
+        private void Owner_FixedUpdate()
         {
             if (!anchored) return;
 
@@ -174,22 +186,26 @@ namespace USS2
 
         private void Update()
         {
-            if (isOwner = Networking.IsOwner(vesselGameObject)) Owner_Update(Time.deltaTime);
+            var deltaTime = Time.deltaTime;
+            if (isOwner = Networking.IsOwner(vesselGameObject)) Owner_Update(deltaTime);
 
-            var position = transform.position;
-            var rotation = transform.rotation;
-            var v = headPosition - position;
             var rest = extendedLength / headSize;
             var retracted = Mathf.Approximately(extendedLength, 0.0f);
-            var pm = retracted ? position : (position + headPosition) * 0.5f + Vector3.down * GetCatenaryD(extendedLength, v.magnitude) * 0.5f;
-            var hp = (pm - headPosition).normalized;
-            var xzhp = Vector3.ProjectOnPlane(hp, Vector3.up);
+
+            var chainMiddlePosition = retracted ? transform.position : GetChainMiddlePosition();
+            var chainHeadToMiddle = (chainMiddlePosition - headPosition).normalized;
+            var xzhp = Vector3.ProjectOnPlane(chainHeadToMiddle, Vector3.up);
 
             var windlassWorking = !Mathf.Approximately(extendedLength, prevExtendedLength);
+            var windlassCurrentSpeed = (extendedLength - prevExtendedLength) / deltaTime;
             prevExtendedLength = extendedLength;
 
             if (windlassSound)
             {
+                if (windlassWorking)
+                {
+                    windlassSound.pitch = soundPitchMultiplier * Mathf.Abs(windlassCurrentSpeed);
+                }
                 if (windlassSound.isPlaying != windlassWorking)
                 {
                     if (windlassWorking) windlassSound.Play();
@@ -199,14 +215,14 @@ namespace USS2
 
             if (shankVisual)
             {
-                shankVisual.position = Vector3.Lerp(transform.TransformPoint(shankInitialPosition), headPosition + hp * shankLength, rest);
-                shankVisual.rotation = Quaternion.Slerp(rotation * shankInitialRotation, Quaternion.FromToRotation(shankUpAxis, hp), rest);
+                shankVisual.position = Vector3.Lerp(transform.TransformPoint(shankInitialPosition), headPosition + chainHeadToMiddle * shankLength, rest);
+                shankVisual.rotation = Quaternion.Slerp(transform.rotation * shankInitialRotation, Quaternion.FromToRotation(shankUpAxis, chainHeadToMiddle), rest);
             }
 
             if (headVisual)
             {
                 headVisual.position = Vector3.Lerp(transform.TransformPoint(headInitialPosition), headPosition, rest);
-                headVisual.rotation = Quaternion.Slerp(rotation * headInitialRotation, Quaternion.FromToRotation(headUpAxis, xzhp), rest);
+                headVisual.rotation = Quaternion.Slerp(transform.rotation * headInitialRotation, Quaternion.FromToRotation(headUpAxis, xzhp), rest);
             }
 
             if (lineRenderer)
@@ -214,18 +230,19 @@ namespace USS2
                 SetLineRendererEnabled(!retracted);
                 if (!retracted)
                 {
-                    lineRenderer.SetPosition(0, lineRenderer.transform.InverseTransformPoint(headPosition + (pm - headPosition).normalized * shankLength));
-                    lineRenderer.SetPosition(1, lineRenderer.transform.InverseTransformPoint(pm));
-                    lineRenderer.SetPosition(2, lineRenderer.transform.InverseTransformPoint(position));
+                    lineRenderer.SetPosition(0, lineRenderer.transform.InverseTransformPoint(headPosition + (chainMiddlePosition - headPosition).normalized * shankLength));
+                    lineRenderer.SetPosition(1, lineRenderer.transform.InverseTransformPoint(chainMiddlePosition));
+                    lineRenderer.SetPosition(2, lineRenderer.transform.InverseTransformPoint(transform.position));
                 }
             }
         }
 
         private void Owner_Update(float deltaTime)
         {
-            if (!Mathf.Approximately(windlassTargetSpeed, 0.0f))
+            var extendSpeed = Mathf.Lerp(anchored ? 0.0f : brakeOffSpeed, windlassSpeed * windlassTargetSpeed, windlassBrake);
+            if (!Mathf.Approximately(extendSpeed, 0.0f))
             {
-                extendedLength = Mathf.Clamp(extendedLength + windlassSpeed * windlassTargetSpeed * deltaTime, 0.0f, maxChainLength);
+                extendedLength = Mathf.Clamp(extendedLength + extendSpeed * deltaTime, 0.0f, maxChainLength);
             }
 
             if (!anchored)
@@ -311,6 +328,11 @@ namespace USS2
             return w * Mathf.Pow(s, 2.0f) / (d * 8.0f);
         }
 
+        private Vector3 GetChainMiddlePosition()
+        {
+            return (transform.position + headPosition) * 0.5f + Vector3.down * GetCatenaryD(extendedLength, (headPosition - transform.position).magnitude);
+        }
+
         private void SetLineRendererEnabled(bool value)
         {
             if (!lineRenderer || _lineRendererEnabled == value) return;
@@ -385,6 +407,12 @@ namespace USS2
                         Gizmos.color = Color.white;
                         Gizmos.DrawLine(hawsepiperPosition, p);
                         Gizmos.DrawLine(p, headPosition);
+
+                        var points = Enumerable.Range(0, 5).Select(i => i / 5.0f).Select(t => v * t + Vector3.down * Mathf.Sin(t * Mathf.PI) * d);
+                        foreach (var (p1, p2) in points.Zip(points.Skip(1), (p1, p2) => (p1, p2)))
+                        {
+                            Gizmos.DrawLine(p1, p2);
+                        }
                     }
                 }
                 else
