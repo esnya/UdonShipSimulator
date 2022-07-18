@@ -53,7 +53,7 @@ namespace USS2
         /// <summary>
         /// Extend or retract speed of windlass in m/s.
         /// </summary>
-        public float windlassSpeed = 0.2f;
+        public float windlassSpeed = 1.0f;
 
         [Header("Visuals")]
         /// <summary>
@@ -76,11 +76,23 @@ namespace USS2
         /// </summary>
         public Vector3 shankUpAxis = Vector3.up;
 
+        [Header("Sounds")]
+        /// <sumamry>
+        /// Sound of windlass.
+        /// </summary>
+        [CanBeNull] public AudioSource windlassSound;
+
         [Header("Runtime Parameters")]
         /// <summary>
         /// Normalized speed of windlass in -1 to 1.
         /// </summary>
         [Range(-1.0f, 1.0f)] public float windlassTargetSpeed = 0.0f;
+
+
+        /// <summary>
+        /// Length extended from hawsepiper in meters.
+        /// </summary>
+        [Range(0.0f, 1.0f)][UdonSynced(UdonSyncMode.Smooth)] public float windlassBrake = 1.0f;
 
         /// <summary>
         /// Length extended from hawsepiper in meters.
@@ -99,11 +111,13 @@ namespace USS2
         [UdonSynced(UdonSyncMode.Smooth)] private Vector3 headPosition;
         private Vector3 shankInitialPosition;
         private Quaternion shankInitialRotation;
-        private LineRenderer debugLineRenderer;
+        private LineRenderer lineRenderer;
         private float shankLength;
         private float physicsRayCastIntervalOffset;
         private Vector3 headInitialPosition;
         private Quaternion headInitialRotation;
+        private float prevExtendedLength;
+        private bool _lineRendererEnabled;
 
         private void Start()
         {
@@ -113,9 +127,15 @@ namespace USS2
 
             massPerMeter = Mathf.Pow(ringDiameter, 2.0f) * 208.0f;
 
-            if (debugLineRenderer = GetComponentInChildren<LineRenderer>())
+            if (!windlassSound) windlassSound = GetComponentInChildren<AudioSource>();
+
+            if (lineRenderer = GetComponentInChildren<LineRenderer>())
             {
-                debugLineRenderer.useWorldSpace = true;
+                lineRenderer.positionCount += 3;
+                for (var i = lineRenderer.positionCount - 1; i >= 3; i--)
+                {
+                    lineRenderer.SetPosition(i, lineRenderer.GetPosition(i - 3));
+                }
             }
 
             if (shankVisual)
@@ -161,9 +181,21 @@ namespace USS2
             var v = headPosition - position;
             var rest = extendedLength / headSize;
             var retracted = Mathf.Approximately(extendedLength, 0.0f);
-            var pm = retracted ? position : (position + headPosition) * 0.5f + Vector3.Cross(v, Vector3.Cross(v, Vector3.up)).normalized * GetCatenaryD(extendedLength, v.magnitude) * 0.5f;
+            var pm = retracted ? position : (position + headPosition) * 0.5f + Vector3.down * GetCatenaryD(extendedLength, v.magnitude) * 0.5f;
             var hp = (pm - headPosition).normalized;
             var xzhp = Vector3.ProjectOnPlane(hp, Vector3.up);
+
+            var windlassWorking = !Mathf.Approximately(extendedLength, prevExtendedLength);
+            prevExtendedLength = extendedLength;
+
+            if (windlassSound)
+            {
+                if (windlassSound.isPlaying != windlassWorking)
+                {
+                    if (windlassWorking) windlassSound.Play();
+                    else windlassSound.Stop();
+                }
+            }
 
             if (shankVisual)
             {
@@ -177,19 +209,14 @@ namespace USS2
                 headVisual.rotation = Quaternion.Slerp(rotation * headInitialRotation, Quaternion.FromToRotation(headUpAxis, xzhp), rest);
             }
 
-            if (debugLineRenderer)
+            if (lineRenderer)
             {
-                if (debugLineRenderer.enabled == retracted)
-                {
-                    debugLineRenderer.enabled = !retracted;
-                    debugLineRenderer.positionCount = retracted ? 0 : 3;
-                }
-
+                SetLineRendererEnabled(!retracted);
                 if (!retracted)
                 {
-                    debugLineRenderer.SetPosition(0, headPosition + (pm - headPosition).normalized * shankLength);
-                    debugLineRenderer.SetPosition(1, pm);
-                    debugLineRenderer.SetPosition(2, position);
+                    lineRenderer.SetPosition(0, lineRenderer.transform.InverseTransformPoint(headPosition + (pm - headPosition).normalized * shankLength));
+                    lineRenderer.SetPosition(1, lineRenderer.transform.InverseTransformPoint(pm));
+                    lineRenderer.SetPosition(2, lineRenderer.transform.InverseTransformPoint(position));
                 }
             }
         }
@@ -207,19 +234,13 @@ namespace USS2
 
                 if (Mathf.Approximately(extendedLength, 0.0f)) return;
 
-                var xzPosition = Vector3.ProjectOnPlane(headPosition, Vector3.up);
-                var seaLevel = vessel.seaLevel;
-                var depth = seaLevel - headPosition.y;
+                headVelocity = Vector3.zero;
+                headPosition = transform.position + Vector3.down * extendedLength;
 
-                if (depth > headSize && Physics.SphereCast(xzPosition + Vector3.up * (seaLevel - headSize), depth - headSize * 2.0f, Vector3.down, out hit, headSize, seabedLayerMask, QueryTriggerInteraction.Ignore))
+                if (SphereCast())
                 {
                     headPosition = hit.point;
                     anchored = true;
-                }
-                else
-                {
-                    headVelocity = Vector3.zero;
-                    headPosition = transform.position + Vector3.down * extendedLength;
                 }
             }
             else
@@ -259,7 +280,7 @@ namespace USS2
 
                 if ((Time.renderedFrameCount + physicsRayCastIntervalOffset) % physicsRayCastIntervalOffset == 0)
                 {
-                    if (Physics.SphereCast(headPosition + Vector3.up * headSize, headSize * 0.5f, Vector3.down, out hit, headSize, seabedLayerMask, QueryTriggerInteraction.Ignore))
+                    if (SphereCast())
                     {
                         headPosition = hit.point;
                     }
@@ -269,6 +290,14 @@ namespace USS2
                     }
                 }
             }
+        }
+
+        private bool SphereCast()
+        {
+            var xzPosition = Vector3.ProjectOnPlane(headPosition, Vector3.up);
+            var seaLevel = vessel.seaLevel;
+            var depth = seaLevel - headPosition.y;
+            return depth > headSize && Physics.SphereCast(xzPosition + Vector3.up * (seaLevel - headSize), depth - headSize * 2.0f, Vector3.down, out hit, headSize, seabedLayerMask, QueryTriggerInteraction.Ignore);
         }
 
         private float GetCatenaryD(float l, float s)
@@ -282,17 +311,25 @@ namespace USS2
             return w * Mathf.Pow(s, 2.0f) / (d * 8.0f);
         }
 
+        private void SetLineRendererEnabled(bool value)
+        {
+            if (!lineRenderer || _lineRendererEnabled == value) return;
+
+            _lineRendererEnabled = value;
+
+            if (!value)
+            {
+                for (var i = 0; i < 3; i++) lineRenderer.SetPosition(i, Vector3.zero);
+            }
+        }
+
         public void _USS_Respawned()
         {
             localForce = headVelocity = Vector3.zero;
             extendedLength = 0.0f;
+            windlassBrake = 1.0f;
             anchored = false;
-
-            if (debugLineRenderer)
-            {
-                debugLineRenderer.enabled = false;
-                debugLineRenderer.positionCount = 0;
-            }
+            SetLineRendererEnabled(false);
         }
 
         public void Windlass_Stop()
@@ -340,11 +377,11 @@ namespace USS2
                     Gizmos.color = Color.green;
                     Gizmos.DrawRay(hawsepiperPosition, hawsepiperTransform.TransformVector(localForce) * forceScale);
 
-                    if (!debugLineRenderer)
+                    if (!lineRenderer)
                     {
                         var v = headPosition - hawsepiperPosition;
                         var d = GetCatenaryD(extendedLength, v.magnitude);
-                        var p = (hawsepiperPosition + headPosition) * 0.5f + Vector3.Cross(v, Vector3.Cross(v, Vector3.up)).normalized * d;
+                        var p = (hawsepiperPosition + headPosition) * 0.5f + Vector3.down * d;
                         Gizmos.color = Color.white;
                         Gizmos.DrawLine(hawsepiperPosition, p);
                         Gizmos.DrawLine(p, headPosition);
@@ -353,7 +390,7 @@ namespace USS2
                 else
                 {
                     var xzPosition = Vector3.ProjectOnPlane(headPosition, Vector3.up);
-                    var seaLevel = vessel.seaLevel;
+                    var seaLevel = vessel?.seaLevel ?? 0.0f;
                     var depth = seaLevel - headPosition.y;
                     Gizmos.color = Color.red;
                     Gizmos.DrawRay(xzPosition + Vector3.up * (seaLevel - headSize), Vector3.down * (depth - headSize) * 2.0f);
