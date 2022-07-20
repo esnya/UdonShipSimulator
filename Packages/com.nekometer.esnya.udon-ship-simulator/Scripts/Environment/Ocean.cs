@@ -74,9 +74,15 @@ namespace USS2
         {
             enabled = false;
 
-            tide = randomTide ? UnityEngine.Random.Range(-1.0f, 1.0f) : 0.0f;
-            tideFlow = randomTide ? UnityEngine.Random.Range(-1.0f, 1.0f) : 0.0f;
-            tideTime = (randomTide ? UnityEngine.Random.Range(0.0f, 12.0f) : 0.0f) + (float)DateTime.UtcNow.TimeOfDay.TotalSeconds;
+            if (autoTide) tideTime = (float)DateTime.UtcNow.TimeOfDay.TotalSeconds;
+            else if (randomTide)
+            {
+                tide =  UnityEngine.Random.Range(-1.0f, 1.0f);
+                tideFlow = UnityEngine.Random.Range(-1.0f, 1.0f);
+                tideTime = UnityEngine.Random.Range(0.0f, 12.0f);
+            }
+
+            enabled = autoTide;
         }
 
         private void Update()
