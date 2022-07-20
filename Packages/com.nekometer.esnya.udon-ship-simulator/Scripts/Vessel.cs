@@ -69,7 +69,7 @@ namespace USS2
             if (freezeOnStart) Freeze();
 
             IsOwner = Networking.IsOwner(gameObject);
-            SendCustomEventDelayedSeconds(nameof(_LateStart), 10);
+            SendCustomEventDelayedSeconds(nameof(_LateStart), UnityEngine.Random.Range(8, 12));
         }
 
         public void _LateStart()
