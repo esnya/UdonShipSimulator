@@ -62,13 +62,14 @@ namespace USS2
         /// </summary>
         public bool autoTide = true;
 
-
         /// <summary>
         /// Initialize tide as random.
         /// </summary>
         public bool randomTide = true;
 
         public float tideTime;
+
+        private const float w = Mathf.PI / 21600.0f;
 
         private void Start()
         {
@@ -87,9 +88,7 @@ namespace USS2
 
         private void Update()
         {
-            tideTime = (tideTime + Time.deltaTime) % 12.0f;
-
-            var w = Mathf.PI / 6.0f;
+            tideTime = (tideTime + Time.deltaTime) % 43200.0f;
             tide = Mathf.Sin(tideTime * w);
             tideFlow = Mathf.Cos(tideTime * w);
         }
