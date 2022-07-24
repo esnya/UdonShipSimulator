@@ -17,6 +17,17 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1140414314826299739, guid: 4ca29a7916045f842aab11c0db4e0650,
+        type: 3}
+      propertyPath: maxValue
+      value: 4412992.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1140414314826299739, guid: 4ca29a7916045f842aab11c0db4e0650,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 1140414314826299739, guid: 4ca29a7916045f842aab11c0db4e0650,
+        type: 3}
     - target: {fileID: 1745633716938638500, guid: 4ca29a7916045f842aab11c0db4e0650,
         type: 3}
       propertyPath: serializedPublicVariablesBytesString

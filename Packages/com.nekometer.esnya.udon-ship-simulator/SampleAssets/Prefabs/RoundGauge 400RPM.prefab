@@ -12,6 +12,17 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: f4caa163760a33845a2a2aa7194306cb, type: 2}
+    - target: {fileID: 1140414314826299739, guid: 4ca29a7916045f842aab11c0db4e0650,
+        type: 3}
+      propertyPath: maxValue
+      value: 6.6666665
+      objectReference: {fileID: 0}
+    - target: {fileID: 1140414314826299739, guid: 4ca29a7916045f842aab11c0db4e0650,
+        type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 1140414314826299739, guid: 4ca29a7916045f842aab11c0db4e0650,
+        type: 3}
     - target: {fileID: 1745633716938638500, guid: 4ca29a7916045f842aab11c0db4e0650,
         type: 3}
       propertyPath: serializedPublicVariablesBytesString
