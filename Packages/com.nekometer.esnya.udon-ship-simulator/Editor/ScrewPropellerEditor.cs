@@ -199,18 +199,15 @@ namespace USS2
             if (GUILayout.Button("Copy to All Propellers in Vessel"))
             {
                 var vesselRigidbody = propeller.GetComponentInParent<Rigidbody>();
-                var udonBehaviour = UdonSharpEditorUtility.GetBackingUdonBehaviour(propeller);
-                foreach (var (p, u) in vesselRigidbody.GetUdonSharpComponentsInChildren<ScrewPropeller>(true).Select(p => (p, u: UdonSharpEditorUtility.GetBackingUdonBehaviour(p))).Where(t => t.u != udonBehaviour))
+                foreach (var p in vesselRigidbody.GetComponentsInChildren<ScrewPropeller>(true))
                 {
-                    Undo.RecordObject(u, "Copy Propeller Settings");
-                    foreach (var symbolName in udonBehaviour.publicVariables.VariableSymbols)
+                    Undo.RecordObject(p, "Copy Propeller Settings");
+                    foreach (var symbolName in UdonSharpEditorUtility.GetBackingUdonBehaviour(p).publicVariables.VariableSymbols)
                     {
-                        if (udonBehaviour.TryGetProgramVariable(symbolName, out var value))
-                        {
-                            u.SetProgramVariable(symbolName, value);
-                        }
+                        var value = p.GetProgramVariable(symbolName);
+                        p.SetProgramVariable(symbolName, value);
                     }
-                    EditorUtility.SetDirty(u);
+                    EditorUtility.SetDirty(p);
                 }
             }
         }

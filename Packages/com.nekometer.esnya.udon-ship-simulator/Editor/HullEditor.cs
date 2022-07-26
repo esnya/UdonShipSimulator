@@ -395,7 +395,7 @@ namespace USS2
         {
             if (UdonSharpEditorUtility.GetUdonSharpBehaviourType(udon) != typeof(Hull)) return;
             var hull = UdonSharpEditorUtility.GetProxyBehaviour(udon) as Hull;
-            var ocean = hull.GetComponentInParent<Rigidbody>().GetUdonSharpComponentInParent<Ocean>();
+            var ocean = hull.GetComponentInParent<Rigidbody>().GetComponentInParent<Ocean>();
 
             try
             {

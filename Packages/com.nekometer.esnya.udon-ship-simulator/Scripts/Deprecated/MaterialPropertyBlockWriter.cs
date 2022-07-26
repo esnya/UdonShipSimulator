@@ -93,7 +93,7 @@ namespace UdonShipSimulator
 
         public void ApplyAllOfScene()
         {
-            foreach (var udon in SceneManager.GetActiveScene().GetRootGameObjects().SelectMany(o => o.GetUdonSharpComponentsInChildren<MaterialPropertyBlockWriter>()))
+            foreach (var udon in SceneManager.GetActiveScene().GetRootGameObjects().SelectMany(o => o.GetComponentsInChildren<MaterialPropertyBlockWriter>()))
             {
                 udon.ApplyNow();
             }
