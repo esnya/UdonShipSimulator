@@ -1,11 +1,13 @@
 {
     "name": "UdonShipSimulator.Editor",
     "references": [
-        "GUID:3c1bc1267eab5884ebe7f232c09ee0d9",
-        "GUID:99835874ee819da44948776e0df4ff1d",
+        "UdonSharp.Runtime",
+        "VRC.SDKBase",
+        "UdonSharp.Editor",
+        "VRC.Udon",
+        "VRC.Udon.Editor",
         "GUID:84265b35cca3905448e623ef3903f0ff",
-        "GUID:58ca7d1463e35a1449812962bf4b7fd4",
-        "GUID:627c4d5cd580ddf41bd320e784fe8b9d"
+        "GUID:58ca7d1463e35a1449812962bf4b7fd4"
     ],
     "includePlatforms": [
         "Editor"
