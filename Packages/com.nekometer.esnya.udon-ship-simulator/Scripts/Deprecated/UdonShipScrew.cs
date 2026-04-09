@@ -1,9 +1,5 @@
 using UdonSharp;
 using UnityEngine;
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-
-using UdonSharpEditor;
-#endif
 
 namespace UdonShipSimulator
 {
@@ -35,7 +31,6 @@ namespace UdonShipSimulator
         {
             if (rigidbody == null) rigidbody = GetComponentInParent<Rigidbody>();
 
-            this.UpdateProxy();
             Gizmos.color = Color.blue;
             Gizmos.DrawLine(transform.position, transform.position + Thrust / rigidbody.mass);
         }
