@@ -69,7 +69,7 @@ namespace UdonShipSimulator
             hinge.localRotation = Quaternion.Euler(angle, 0, 0);
             var power = Mathf.Clamp(angle / maxAngle, -1, 1);
             if (inverse) power *= -1;
-            if (screw != null)
+            if (screw != null && Networking.IsOwner(screw.gameObject))
             {
                 screw.throttle = power;
             }
