@@ -1,0 +1,147 @@
+using UdonSharp;
+using System.Linq;
+using UnityEngine;
+using VRC.SDK3.Components;
+using VRC.SDKBase;
+using VRC.Udon;
+using VRC.Udon.Common.Interfaces;
+
+namespace USS2
+{
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    [DefaultExecutionOrder(300)] // After Hull
+    public class Vessel : UdonSharpBehaviour
+    {
+        public const string EVENT_VesselStart = "_USS_VesselStart";
+        public const string EVENT_TakeOwnership = "_USS_TakeOwnership";
+        public const string EVENT_LoseOwnership = "_USS_LoseOwnership";
+        public const string EVENT_Respawned = "_USS_Respawned";
+        public const string EVENT_Entered = "_USS_Entered";
+        public const string EVENT_Exited = "_USS_Exited";
+
+        public bool freezeOnStart = true;
+
+
+        /// <summary>
+        /// Ocean.
+        /// </summary>
+        public Ocean ocean;
+
+        /// <summary>
+        /// SeaLevel.
+        /// </summary>
+        public float seaLevel { get; private set; }
+
+        private Rigidbody vesselRigidbody;
+        private bool _isOwner;
+        private UdonSharpBehaviour[] children;
+        private float drag;
+        private float angularDrag;
+        private Vector3 initialPosition;
+        private Quaternion initialRotation;
+        private VRCObjectSync objectSync;
+
+        public bool IsOwner
+        {
+            get => _isOwner;
+            private set
+            {
+                _isOwner = value;
+                _SendCustomEventToChildren(value ? EVENT_TakeOwnership : EVENT_LoseOwnership);
+            }
+        }
+
+        private void Start()
+        {
+            vesselRigidbody = GetComponent<Rigidbody>();
+            objectSync = (VRCObjectSync)GetComponent(typeof(VRCObjectSync));
+
+            ocean = gameObject.GetComponentInParent<Ocean>();
+            if (ocean)
+            {
+                seaLevel = ocean.transform.position.y;
+            }
+
+            initialPosition = transform.localPosition;
+            initialRotation = transform.localRotation;
+            drag = vesselRigidbody.drag;
+            angularDrag = vesselRigidbody.angularDrag;
+
+            if (freezeOnStart) Freeze();
+
+            IsOwner = Networking.IsOwner(gameObject);
+            SendCustomEventDelayedSeconds(nameof(_LateStart), UnityEngine.Random.Range(8, 12));
+        }
+
+        public void _LateStart()
+        {
+            children = gameObject
+                .GetComponentsInChildren<UdonSharpBehaviour>(true)
+                .ToArray();
+            foreach (var child in children)
+            {
+                if (child) child.SetProgramVariable("vessel", this);
+            }
+
+            _SendCustomEventToChildren(EVENT_VesselStart);
+        }
+
+        private void Freeze()
+        {
+            vesselRigidbody.drag = vesselRigidbody.mass;
+            vesselRigidbody.angularDrag = vesselRigidbody.mass;
+            SendCustomEventDelayedSeconds(nameof(_Unfreeze), 10);
+        }
+
+        public void _Unfreeze()
+        {
+            vesselRigidbody.velocity = Vector3.zero;
+            vesselRigidbody.angularVelocity = Vector3.zero;
+            vesselRigidbody.drag = drag;
+            vesselRigidbody.angularDrag = angularDrag;
+        }
+
+        public override void OnOwnershipTransferred(VRCPlayerApi player)
+        {
+            if (IsOwner = player.isLocal)
+            {
+                if (children == null) return;
+                foreach (var child in children)
+                {
+                    if (child && !Networking.IsOwner(child.gameObject)) Networking.SetOwner(player, child.gameObject);
+                }
+            }
+        }
+
+        public void _SendCustomEventToChildren(string eventName)
+        {
+            if (children == null) return;
+            foreach (var child in children)
+            {
+                if (child) child.SendCustomEvent(eventName);
+            }
+        }
+
+        public void _TakeOwnership()
+        {
+            if (!Networking.IsOwner(gameObject))
+            {
+                Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            }
+        }
+
+        public void _Respawn()
+        {
+            _TakeOwnership();
+
+            Freeze();
+            transform.localPosition = initialPosition;
+            transform.localRotation = initialRotation;
+            if (objectSync) objectSync.FlagDiscontinuity();
+
+            SendCustomNetworkEvent(NetworkEventTarget.All, nameof(OnRespawned));
+        }
+
+        public void OnRespawned() => _SendCustomEventToChildren(EVENT_Respawned);
+    }
+}

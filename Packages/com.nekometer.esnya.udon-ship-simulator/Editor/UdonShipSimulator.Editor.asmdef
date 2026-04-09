@@ -1,0 +1,23 @@
+{
+    "name": "UdonShipSimulator.Editor",
+    "references": [
+        "UdonSharp.Runtime",
+        "VRC.SDKBase",
+        "UdonSharp.Editor",
+        "VRC.Udon",
+        "VRC.Udon.Editor",
+        "GUID:84265b35cca3905448e623ef3903f0ff",
+        "GUID:58ca7d1463e35a1449812962bf4b7fd4"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

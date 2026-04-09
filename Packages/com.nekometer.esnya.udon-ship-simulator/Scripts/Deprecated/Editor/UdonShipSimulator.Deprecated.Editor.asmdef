@@ -1,0 +1,22 @@
+{
+    "name": "UdonShipSimulator.Deprecated.Editor",
+    "references": [
+        "UdonShipSimulator.Deprecated",
+        "VRC.Udon.Editor",
+        "UdonSharp.Editor",
+        "Unity.TextMeshPro",
+        "UdonShipSimulator"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UDON_SHIP_SIMULATOR_ENABLE_DEPRECATED"
+    ]
+}

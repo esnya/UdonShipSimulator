@@ -1,0 +1,34 @@
+{
+  "name": "com.nekometer.esnya.udon-ship-simulator",
+  "displayName": "Udon Ship Simulator",
+  "unity": "2022.3",
+  "version": "1.0.0",
+  "description": "Simple Ship Simulation for Udon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/esnya/UdonShipSimulator.git"
+  },
+  "keywords": [
+    "VRChat",
+    "Udon",
+    "Ship",
+    "Simulation"
+  ],
+  "author": {
+    "name": "esnya"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/esnya/UdonShipSimulator/issues"
+  },
+  "homepage": "https://github.com/esnya/UdonShipSimulator#readme",
+  "gitDependencies": {
+    "com.vrchat.base": "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.base#3.10.2",
+    "com.vrchat.worlds": "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.worlds#3.10.2",
+    "com.nekometer.esnya.inari-udon": "https://github.com/esnya/InariUdon.git?path=Packages/com.nekometer.esnya.inari-udon#alpha"
+  },
+  "vpmDependencies": {
+    "com.vrchat.worlds": "3.10.2",
+    "com.nekometer.esnya.inari-udon": ">=10.0.0-alpha"
+  }
+}

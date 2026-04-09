@@ -1,0 +1,17 @@
+{
+    "name": "UdonShipSimulator",
+    "references": [
+        "VRC.Udon",
+        "UdonSharp.Runtime",
+        "InariUdonRuntime",
+        "Unity.TextMeshPro"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}
