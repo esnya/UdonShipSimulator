@@ -1,4 +1,5 @@
 using UdonSharp;
+using System.Linq;
 using UnityEngine;
 using VRC.SDK3.Components;
 using VRC.SDKBase;
@@ -74,7 +75,9 @@ namespace USS2
 
         public void _LateStart()
         {
-            children = (UdonSharpBehaviour[])gameObject.GetComponentsInChildren(typeof(UdonBehaviour), true);
+            children = gameObject
+                .GetComponentsInChildren<UdonSharpBehaviour>(true)
+                .ToArray();
             foreach (var child in children)
             {
                 if (child) child.SetProgramVariable("vessel", this);
