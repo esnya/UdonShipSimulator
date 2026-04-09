@@ -1,12 +1,10 @@
 ﻿
 using JetBrains.Annotations;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
 using UnityEditor;
-using UdonSharpEditor;
 #endif
 
 namespace USS2
@@ -18,13 +16,13 @@ namespace USS2
         /// <summary>
         /// Part of rope in world.
         /// </summary>
-        [ListView("Segments")][NotNull][ItemNotNull] public Transform[] controlPoints = { };
+        [NotNull][ItemNotNull] public Transform[] controlPoints = { };
 
         /// <summary>
         /// Rope length to control point.
         /// </summary>
         /// <value></value>
-        [ListView("Segments")][Min(0.0f)][NotNull] public float[] segmentLengthList = { };
+        [Min(0.0f)][NotNull] public float[] segmentLengthList = { };
 
         /// <summary>
         /// Segments of rope rendering.

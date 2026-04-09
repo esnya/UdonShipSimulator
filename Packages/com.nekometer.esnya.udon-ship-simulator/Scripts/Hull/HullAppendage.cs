@@ -1,6 +1,5 @@
 using System;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
 
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
@@ -28,7 +27,7 @@ namespace USS2
         /// <summary>
         /// Type of Appendage.
         /// </summary>
-        [Popup("GetAppendageTypes")] public int appendageType = SHAFT_BRACKETS;
+        public int appendageType = SHAFT_BRACKETS;
 
         /// <summary>
         /// Size. (breadth, depth, length) or (diameter, N/A, length)

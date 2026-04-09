@@ -1,9 +1,6 @@
 using System;
-using JetBrains.Annotations;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
-using VRC.Core;
 using VRC.SDKBase;
 
 namespace USS2
@@ -81,8 +78,8 @@ namespace USS2
         public AudioSource sound;
         public float soundPitchVariation = 0.1f;
 
-        [ListView("Particles")] public ParticleSystem[] particles = { };
-        [ListView("Particles")][Popup("GetParticleTypes")] public int[] particleTypes = { };
+        public ParticleSystem[] particles = { };
+        public int[] particleTypes = { };
 
 
         [Header("Runtime Status")]
@@ -233,11 +230,5 @@ namespace USS2
             }
         }
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-        public string[] GetParticleTypes() => new [] {
-            "Smoke",
-            "ReriefedSteam",
-        };
-#endif
     }
 }

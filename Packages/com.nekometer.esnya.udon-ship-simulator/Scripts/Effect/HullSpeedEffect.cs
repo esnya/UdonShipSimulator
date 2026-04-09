@@ -1,7 +1,6 @@
 using System;
 using JetBrains.Annotations;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
 
 namespace USS2
@@ -18,22 +17,22 @@ namespace USS2
         /// <summary>
         /// Particle effects
         /// </summary>
-        [NotNull][ListView("Particles")] public ParticleSystem[] particles = { };
+        [NotNull] public ParticleSystem[] particles = { };
 
         /// <summary>
         /// Max speed in m/s.
         /// </summary>
-        [NotNull][ListView("Particles")] public float[] maxEmissionSpeeds = { };
+        [NotNull] public float[] maxEmissionSpeeds = { };
 
         /// <summary>
         /// Curve of emission rate.
         /// </summary>
-        [NotNull][ListView("Particles")] public float[] emissionRateCurves = { };
+        [NotNull] public float[] emissionRateCurves = { };
 
         /// <summary>
         /// Keep sealevel.
         /// </summary>
-        [ListView("Particle")] public bool[] keepSeaLevels = { };
+        public bool[] keepSeaLevels = { };
 
         /// <summary>
         /// Hull speed in m/s.
