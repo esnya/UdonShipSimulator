@@ -25,8 +25,7 @@
   "gitDependencies": {
     "com.vrchat.base": "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.base#3.10.2",
     "com.vrchat.worlds": "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.worlds#3.10.2",
-    "com.nekometer.esnya.inari-udon": "https://github.com/esnya/InariUdon.git?path=Packages/com.nekometer.esnya.inari-udon#alpha",
-    "sh.orels.udontoolkit": "https://github.com/orels1/UdonToolkit.git#develop"
+    "com.nekometer.esnya.inari-udon": "https://github.com/esnya/InariUdon.git?path=Packages/com.nekometer.esnya.inari-udon#alpha"
   },
   "vpmDependencies": {
     "com.vrchat.worlds": "3.10.2",
