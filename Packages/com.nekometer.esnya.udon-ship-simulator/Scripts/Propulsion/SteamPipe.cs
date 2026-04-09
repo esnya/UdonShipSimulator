@@ -36,7 +36,7 @@ namespace USS2
             if (Networking.IsOwner(gameObject))
             {
                 var deltaTime = Time.deltaTime;
-                var smoothing = capacity <= 0.0f ? 1.0f : deltaTime / capacity;
+                var smoothing = capacity <= 0.0f ? 1.0f : Mathf.Clamp01(deltaTime / capacity);
                 var steamOutputLimitTarget = Mathf.Approximately(steamOutput, 0.0f) ? 0.0f : Mathf.Clamp01(steamInput / steamOutput);
                 var steamInputLimitTarget = Mathf.Approximately(steamInput, 0.0f) ? 1.0f : Mathf.Clamp01(steamOutput / steamInput);
                 steamFlow = steamInput;

@@ -124,9 +124,9 @@ namespace USS2
             switch (type)
             {
                 case 0:
-                    return shaft.n * gearRatio;
+                    return shaft ? shaft.n * gearRatio : 0.0f;
                 case 1:
-                    return steamPipe.steamFlow * steamValveValue;
+                    return steamPipe ? steamPipe.steamFlow * steamValveValue : 0.0f;
                 default:
                     return 0.0f;
             }
