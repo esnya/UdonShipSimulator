@@ -115,7 +115,7 @@ namespace USS2
             }
 
             steamPipe.steamOutput += steamConsumption * steamValveValue;
-            steamFlow = Mathf.Clamp(steamPipe.steamFlow * steamValveValue, 0.0f, steamConsumption) * steamPipe.steamOutputLimit; // kg/s
+            steamFlow = Mathf.Clamp(steamPipe.steamFlow * steamValveValue, 0.0f, steamConsumption) * steamPipe.steamInputLimit; // kg/s
             shaft.inputTorque += GetAvailableTorque(steamFlow / steamConsumption);
         }
 
