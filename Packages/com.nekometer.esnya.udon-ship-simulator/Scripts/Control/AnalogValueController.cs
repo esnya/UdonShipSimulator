@@ -1,7 +1,6 @@
 ﻿
 using JetBrains.Annotations;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
 using VRC.SDKBase;
 
@@ -18,7 +17,7 @@ namespace USS2
         /// <summary>
         /// Target variable name of target.
         /// </summary>
-        [Popup("programVariable", "@target")] public string variableName = "valveValue";
+        public string variableName = "valveValue";
 
         /// <summary>
         /// Initial value. 0 to 1. Target varible will be set as (value + valueBias) * valueMultiplier.
@@ -48,17 +47,17 @@ namespace USS2
         /// <summary>
         /// Viaual transform to animate such as handle.
         /// </summary>
-        [ListView("Visual Transforms")] public Transform[] visualTransforms = { };
+        public Transform[] visualTransforms = { };
 
         /// <summary>
         /// Remapping scale for visual transforms.
         /// </summary>
-        [ListView("Visual Transforms")] public float[] rotationScales = { };
+        public float[] rotationScales = { };
 
         /// <summary>
         /// Rotation axis to animate visual transform.
         /// </summary>
-        [ListView("Visual Transforms")] public Vector3[] rotationAxises = { };
+        public Vector3[] rotationAxises = { };
         private float initialValue;
 
         private float Value

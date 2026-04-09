@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
 
 namespace USS2
@@ -9,12 +8,12 @@ namespace USS2
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class KeyboardInput : UdonSharpBehaviour
     {
-        [ListView("Bindings")][Popup("GetKeyCodes")] public int[] keyCodes = { };
-        [ListView("Bindings")] public UdonSharpBehaviour[] targets = { };
-        [ListView("Bindings")][Popup("behaviour", "@targets")] public string[] eventNames = { };
-        [ListView("Bindings")] public bool[] controls = { };
-        [ListView("Bindings")] public bool[] shifts = { };
-        [ListView("Bindings")] public bool[] alts = { };
+        public int[] keyCodes = { };
+        public UdonSharpBehaviour[] targets = { };
+        public string[] eventNames = { };
+        public bool[] controls = { };
+        public bool[] shifts = { };
+        public bool[] alts = { };
 
         private void Update()
         {
@@ -31,11 +30,5 @@ namespace USS2
             }
         }
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-        public string[] GetKeyCodes()
-        {
-            return Enumerable.Range(0, (Enum.GetValues(typeof(KeyCode)) as int[]).Max()).Select(i => Enum.IsDefined(typeof(KeyCode), i) ? $"{(KeyCode)i}" : string.Empty).ToArray();
-        }
-#endif
     }
 }

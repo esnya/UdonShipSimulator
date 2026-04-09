@@ -1,7 +1,6 @@
 using System.Dynamic;
 using JetBrains.Annotations;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
 
 namespace USS2
@@ -18,7 +17,7 @@ namespace USS2
         /// <summary>
         /// Variable value of target udon behaviour.
         /// </summary>
-        [Popup("programVariable", "@sourceBehaviour")] public string variableName = "value";
+        public string variableName = "value";
 
         /// <summary>
         /// Indicator transform to rotate.
