@@ -2,7 +2,6 @@ using System;
 using JetBrains.Annotations;
 using UdonSharp;
 using UdonToolkit;
-using UnityEditor;
 using UnityEngine;
 using VRC.Core;
 using VRC.SDKBase;
