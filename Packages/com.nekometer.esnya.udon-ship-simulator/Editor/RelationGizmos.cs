@@ -26,11 +26,11 @@ namespace USS2
             icons = new Dictionary<Type, Texture>() {
                 { typeof(ScrewPropeller), Resources.Load<Texture>("Icons/Propeller_Outline") },
                 { typeof(Rudder), Resources.Load<Texture>("Icons/Rudder_Outline") },
-                { typeof(SteamTurbine), Resources.Load<Texture>("Icons/SteamTurbine_Outline") },
+                { typeof(SteamTurbine), Resources.Load<Texture>("Icons/Turbine_Outline") },
                 { typeof(SteamPipe), Resources.Load<Texture>("Icons/SteamPipe_Outline") },
                 { typeof(Shaft), Resources.Load<Texture>("Icons/Shaft_Outline") },
-                { typeof(SteamBoiler), Resources.Load<Texture>("Icons/Boiler_Outline") },
-                { typeof(AnalogValueController), Resources.Load<Texture>("Icons/Valvue_Outline") },
+                { typeof(SteamBoiler), Resources.Load<Texture>("Icons/Boile_Outline") },
+                { typeof(AnalogValueController), Resources.Load<Texture>("Icons/Valve_Outline") },
             };
         }
 
