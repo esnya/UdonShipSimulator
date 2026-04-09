@@ -17,6 +17,12 @@ namespace USS2
         private bool torqueBySpeed;
         private bool torqueByRPM;
 
+        private static float GetSignedAxialSpeed(ScrewPropeller propeller)
+        {
+            var vesselRigidbody = propeller.GetComponentInParent<Rigidbody>();
+            return vesselRigidbody ? Vector3.Dot(vesselRigidbody.velocity, propeller.transform.forward) : 0.0f;
+        }
+
         private void OnEnable()
         {
             var propeller = target as ScrewPropeller;
@@ -128,6 +134,35 @@ namespace USS2
             base.OnInspectorGUI();
 
             var propeller = target as ScrewPropeller;
+            if (!propeller) return;
+
+            if (EditorApplication.isPlaying)
+            {
+                var shaft = propeller.shaft;
+                if (shaft)
+                {
+                    var axialSpeed = GetSignedAxialSpeed(propeller);
+                    var absAxialSpeed = Mathf.Abs(axialSpeed);
+                    var n = shaft.n;
+                    var absN = Mathf.Abs(n);
+                    var thrust = propeller.GetPropellerThrust(absAxialSpeed, n) * (n < 0 ? propeller.reverseEfficiency : 1.0f);
+                    var torque = propeller.GetPropellerTorque(absAxialSpeed, n);
+                    var j = absN > 0.0001f ? propeller.GetJ(absAxialSpeed, n) : 0.0f;
+
+                    EditorGUILayout.Space();
+                    using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+                    {
+                        EditorGUILayout.LabelField("Runtime Debug", EditorStyles.boldLabel);
+                        EditorGUILayout.LabelField("RPM", $"{n * 60.0f:F1}");
+                        EditorGUILayout.LabelField("Axial Speed", $"{axialSpeed:F2} m/s");
+                        EditorGUILayout.LabelField("Advance Ratio J", $"{j:F3}");
+                        EditorGUILayout.LabelField("Thrust", $"{thrust:F1} N");
+                        EditorGUILayout.LabelField("Torque", $"{torque:F1} N m");
+                        EditorGUILayout.LabelField("Open-Water Efficiency", absN > 0.0001f ? $"{propeller.GetPropellerEfficiency(j):F3}" : "N/A");
+                        EditorGUILayout.LabelField("Hull Efficiency", $"{propeller.GetEfficiency(absAxialSpeed):F3}");
+                    }
+                }
+            }
 
             var step = 100;
             var jMax = 1.5f;
