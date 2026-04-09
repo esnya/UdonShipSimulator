@@ -295,7 +295,7 @@ namespace USS2
                 EditorGUILayout.CurveField(speeds.Select(v =>
                 {
                     var fn = hull.GetFn(hull.length, v, g);
-                    var value = hull.GetCF(hull.GetRn(Ocean.OceanRho, Ocean.OceanMu, hull.length, volume));
+                    var value = hull.GetCF(hull.GetRn(Ocean.OceanRho, Ocean.OceanMu, hull.length, v));
                     return (fn, value);
                 }).ToAnimationCorve().TangentSmoothed(1.0f));
                 EditorGUILayout.CurveField(speeds.Select(v =>
@@ -315,7 +315,7 @@ namespace USS2
                     var at = 0.0f;
                     var tf = draught;
                     var hb = tf / 2.0f;
-                    var f = hull.GetCF(hull.GetRn(Ocean.OceanRho, Ocean.OceanMu, hull.length, volume));
+                    var f = hull.GetCF(hull.GetRn(Ocean.OceanRho, Ocean.OceanMu, hull.length, v));
                     var w = hull.GetCW(surfaceArea, volume, cp, cm, cw, fn, g, v, at, hb, 0.0f, tf, lcb);
                     var k1 = hull.GetK1(cp, lcb);
                     return (fn, f * (1 + k1) + w);

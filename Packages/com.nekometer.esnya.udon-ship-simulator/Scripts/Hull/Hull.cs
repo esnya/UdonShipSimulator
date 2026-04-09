@@ -799,7 +799,7 @@ namespace USS2
             var result = CreateAnimationCurve();
 
             var volume = GetVolume(designedDraught);
-            var cb = GetVolume(depth) / (beam * length * designedDraught);
+            var cb = volume / (beam * length * designedDraught);
             var am = GetCrossSectionAreaByDraughtProfile(0.5f).Evaluate(designedDraught);
             var cp = volume / (length * am);
             var ca = 0.0f;
