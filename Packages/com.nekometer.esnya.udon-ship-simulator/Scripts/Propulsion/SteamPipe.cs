@@ -1,4 +1,3 @@
-﻿
 using System;
 using UdonSharp;
 using UnityEngine;
@@ -28,6 +27,8 @@ namespace USS2
         private void Start()
         {
             steamFlow = 0;
+            steamInputLimit = 1.0f;
+            steamOutputLimit = 1.0f;
         }
 
         private void LateUpdate()
@@ -35,11 +36,12 @@ namespace USS2
             if (Networking.IsOwner(gameObject))
             {
                 var deltaTime = Time.deltaTime;
+                var smoothing = capacity <= 0.0f ? 1.0f : deltaTime / capacity;
                 var steamOutputLimitTarget = Mathf.Approximately(steamOutput, 0.0f) ? 0.0f : Mathf.Clamp01(steamInput / steamOutput);
                 var steamInputLimitTarget = Mathf.Approximately(steamInput, 0.0f) ? 1.0f : Mathf.Clamp01(steamOutput / steamInput);
                 steamFlow = steamInput;
-                steamInputLimit = Mathf.Lerp(steamInputLimit, steamInputLimitTarget, deltaTime / capacity);
-                steamOutputLimit = Mathf.Lerp(steamOutputLimit, steamOutputLimitTarget, deltaTime / capacity);
+                steamInputLimit = Mathf.Lerp(steamInputLimit, steamInputLimitTarget, smoothing);
+                steamOutputLimit = Mathf.Lerp(steamOutputLimit, steamOutputLimitTarget, smoothing);
 
                 steamOutput = 0.0f;
                 steamInput = 0.0f;

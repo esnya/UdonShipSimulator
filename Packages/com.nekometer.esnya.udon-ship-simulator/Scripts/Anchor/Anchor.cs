@@ -352,6 +352,7 @@ namespace USS2
 
         private float GetCatenaryT(float d, float s, float w)
         {
+            if (d <= 0.0f) return 0.0f;
             return w * Mathf.Pow(s, 2.0f) / (d * 8.0f);
         }
 

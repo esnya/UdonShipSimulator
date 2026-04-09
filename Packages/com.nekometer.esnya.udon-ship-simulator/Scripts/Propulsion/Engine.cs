@@ -88,7 +88,7 @@ namespace USS2
         {
             if (!shaft) shaft = GetComponentInParent<Shaft>();
 
-            maxTorque = power / rpm * gearRatio;
+            maxTorque = rpm > 0.0f ? power * 60.0f * gearRatio / (2.0f * Mathf.PI * rpm) : 0.0f;
 
             if (!audioSource) audioSource = GetComponentInChildren<AudioSource>();
             if (audioSource)
@@ -107,11 +107,13 @@ namespace USS2
 
         private void Update()
         {
+            if (!shaft) return;
+
             n = shaft.n * gearRatio;
 
             if (Networking.IsOwner(gameObject)) Owner_Update();
 
-            var normalizedRPM = Mathf.Abs(n / (rpm / 60.0f));
+            var normalizedRPM = rpm > 0.0f ? Mathf.Abs(n / (rpm / 60.0f)) : 0.0f;
             var stopped = Mathf.Approximately(normalizedRPM, 0.0f);
             if (audioSource)
             {
@@ -140,6 +142,8 @@ namespace USS2
 
         private void Owner_Update()
         {
+            if (!shaft || rpm <= 0.0f) return;
+
             var normalizedRPM = n / (rpm / 60.0f);
             shaft.inputTorque += torqueCurve.Evaluate(normalizedRPM) * maxTorque * throttle;
         }

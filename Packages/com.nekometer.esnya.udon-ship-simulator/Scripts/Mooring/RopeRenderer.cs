@@ -1,4 +1,4 @@
-﻿
+using System;
 using JetBrains.Annotations;
 using UdonSharp;
 using UnityEngine;
@@ -48,6 +48,11 @@ namespace USS2
 
         private void Start()
         {
+            controlPoints ??= Array.Empty<Transform>();
+            segmentLengthList ??= Array.Empty<float>();
+            pointPerSegment = Mathf.Max(pointPerSegment, 2);
+            raycastInterval = Mathf.Max(raycastInterval, 1);
+
             lineRenderer = GetComponent<LineRenderer>();
             positionOffset = lineRenderer.positionCount;
             lineRenderer.positionCount += controlPoints.Length * pointPerSegment;
@@ -60,11 +65,13 @@ namespace USS2
 
         private void Update()
         {
+            if (controlPoints == null || controlPoints.Length == 0) return;
+
             if ((Time.renderedFrameCount + raycastIntervalOffset) % raycastInterval == 0)
             {
                 var i = UnityEngine.Random.Range(0, controlPoints.Length);
                 var cg = (GetControlPointPosition(i - 1) + GetControlPointPosition(i)) / 2.0f;
-                groundHeights[i] = Physics.Raycast(cg, Vector3.down, out hit, segmentLengthList[i], groundLeyerMask, queryTriggerInteraction)
+                groundHeights[i] = Physics.Raycast(cg, Vector3.down, out hit, GetSegmentLength(i), groundLeyerMask, queryTriggerInteraction)
                     ? hit.point.y
                     : float.NaN;
             }
@@ -77,8 +84,9 @@ namespace USS2
 
                 var h = groundHeights[i];
                 var groundNotFound = float.IsNaN(h);
-                var a = Vector3.Cross(i % 2 == 0 ? Vector3.up : -Vector3.down, v).normalized * (segmentLengthList[i] / Mathf.PI);
-                var d = groundNotFound ? 0.0f : GetCatenaryD(segmentLengthList[i], v.magnitude);
+                var segmentLength = GetSegmentLength(i);
+                var a = Vector3.Cross(i % 2 == 0 ? Vector3.up : -Vector3.down, v).normalized * (segmentLength / Mathf.PI);
+                var d = groundNotFound ? 0.0f : GetCatenaryD(segmentLength, v.magnitude);
                 var onGround = groundNotFound || Mathf.Approximately(d, 0.0f);
 
                 for (var j = 0; j < pointPerSegment; j++)
@@ -87,7 +95,7 @@ namespace USS2
                     var u = Mathf.Sin(t * Mathf.PI);
                     var p = Vector3.Lerp(p1, p2, t);
                     var dj = Mathf.Min(d * u, p.y - h);
-                    var w = onGround ? u : Mathf.Clamp01(1.0f - dj / d / u);
+                    var w = onGround || Mathf.Approximately(u, 0.0f) ? u : Mathf.Clamp01(1.0f - dj / d / u);
                     lineRenderer.SetPosition(positionOffset + i * pointPerSegment + j, transform.InverseTransformPoint(p + w * a + dj * Vector3.down));
                 }
             }
@@ -95,7 +103,22 @@ namespace USS2
 
         private Vector3 GetControlPointPosition(int i)
         {
-            return i == -1 ? transform.position : controlPoints[i].position;
+            if (i < 0 || controlPoints == null || i >= controlPoints.Length || controlPoints[i] == null)
+            {
+                return transform.position;
+            }
+
+            return controlPoints[i].position;
+        }
+
+        private float GetSegmentLength(int i)
+        {
+            if (segmentLengthList == null || i < 0 || i >= segmentLengthList.Length)
+            {
+                return 0.0f;
+            }
+
+            return Mathf.Max(segmentLengthList[i], 0.0f);
         }
 
         private float GetCatenaryD(float l, float s)

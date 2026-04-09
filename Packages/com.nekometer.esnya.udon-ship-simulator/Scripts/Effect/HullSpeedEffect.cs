@@ -72,7 +72,10 @@ namespace USS2
 
         private void Update()
         {
+            if (!vesselRigidbody) return;
+
             var deltaTime = Time.deltaTime;
+            if (deltaTime <= 0.0f) return;
             var position = vesselRigidbody.position;
 
             hullSpeed = Mathf.Lerp(hullSpeed, Vector3.Distance(position, prevPosition) / deltaTime, deltaTime / smoothing);
@@ -85,11 +88,20 @@ namespace USS2
                 if (!particle) continue;
 
                 var t = particleTransforms[i];
-                t.position = Vector3.Scale(t.position, Vector3.one + Vector3.up * (seaLevel  - 1.0f));
+                if (i < keepSeaLevels.Length && keepSeaLevels[i])
+                {
+                    var particlePosition = t.position;
+                    particlePosition.y = seaLevel;
+                    t.position = particlePosition;
+                }
                 t.rotation = Quaternion.FromToRotation(Vector3.forward, Vector3.ProjectOnPlane(t.forward, Vector3.up));
 
                 var emission = particleEmissions[i];
-                emission.rateOverTime = particleEmissionRateOverTimeMultipliers[i] * Mathf.Pow(Mathf.Clamp01(hullSpeed / maxEmissionSpeeds[i]), emissionRateCurves[i]);
+                var maxEmissionSpeed = i < maxEmissionSpeeds.Length ? maxEmissionSpeeds[i] : 0.0f;
+                var emissionRateCurve = i < emissionRateCurves.Length ? emissionRateCurves[i] : 1.0f;
+                emission.rateOverTime = maxEmissionSpeed > 0.0f
+                    ? particleEmissionRateOverTimeMultipliers[i] * Mathf.Pow(Mathf.Clamp01(hullSpeed / maxEmissionSpeed), emissionRateCurve)
+                    : 0.0f;
             }
         }
 

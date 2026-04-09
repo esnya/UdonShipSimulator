@@ -36,11 +36,13 @@ namespace USS2
         private void Start()
         {
             if (!flow) flow = GetComponentInParent<Flow>();
-            ocean = flow.GetComponentInParent<Ocean>();
+            if (flow) ocean = flow.GetComponentInParent<Ocean>();
         }
 
         private void Update()
         {
+            if (!flow || !ocean) return;
+
             var speed = flow.speed * ocean.tideFlow;
             UpdateSpeed(Mathf.Clamp(Mathf.RoundToInt(speed * 1.944f), -9, 9));
             UpdateState(Mathf.FloorToInt(Time.time / 2.0f) % 6);
@@ -51,11 +53,11 @@ namespace USS2
             if (speed == prevSpeed && initialized) return;
             initialized = true;
 
-            for (var i = 0; i <= 9; i++)
+            for (var i = 0; i < speedDigits.Length; i++)
             {
                 var digit = speedDigits[i];
                 if (!digit) continue;
-                digit.SetActive(i == speed);
+                digit.SetActive(i == Mathf.Abs(speed));
             }
 
             direction = Mathf.RoundToInt(Mathf.Sign(speed == 0 ? prevSpeed : speed));

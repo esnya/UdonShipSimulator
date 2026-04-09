@@ -70,22 +70,22 @@ namespace USS2
 
         private void Start()
         {
-            vesselGameObject = GetComponentInParent<Rigidbody>().gameObject;
+            var vesselRigidbody = GetComponentInParent<Rigidbody>();
+            vesselGameObject = vesselRigidbody ? vesselRigidbody.gameObject : gameObject;
             if (!steamPipe) steamPipe = GetComponentInParent<SteamPipe>();
 
-
-            powerToTorque = 60.0f * gearRatio / (2.0f * Mathf.PI * rpm);
+            powerToTorque = Mathf.Approximately(rpm, 0.0f) ? 0.0f : 60.0f * gearRatio / (2.0f * Mathf.PI * rpm);
         }
 
         private void Update()
         {
             if (Networking.IsOwner(vesselGameObject)) Owner_Update();
 
-            n = shaft.n * gearRatio;
+            n = shaft ? shaft.n * gearRatio : 0.0f;
 
             if (audioSource)
             {
-                var t = Mathf.Clamp01(Mathf.Abs(n * 60.0f / rpm));
+                var t = Mathf.Approximately(rpm, 0.0f) ? 0.0f : Mathf.Clamp01(Mathf.Abs(n * 60.0f / rpm));
                 var stopped = Mathf.Approximately(t, 0.0f);
 
                 if (!stopped)
@@ -99,7 +99,7 @@ namespace USS2
                     if (stopped) audioSource.Stop();
                     else {
                         pitchMultiplier = 1.0f + (UnityEngine.Random.value * 2.0f - 1.0f) * pitchVariation;
-                        audioSource.time = UnityEngine.Random.Range(0, audioSource.clip.length);
+                        if (audioSource.clip) audioSource.time = UnityEngine.Random.Range(0, audioSource.clip.length);
                         audioSource.Play();
                     }
                 }
@@ -108,6 +108,12 @@ namespace USS2
 
         private void Owner_Update()
         {
+            if (!steamPipe || !shaft || Mathf.Approximately(steamConsumption, 0.0f))
+            {
+                steamFlow = 0.0f;
+                return;
+            }
+
             steamPipe.steamOutput += steamConsumption * steamValveValue;
             steamFlow = Mathf.Clamp(steamPipe.steamFlow * steamValveValue, 0.0f, steamConsumption) * steamPipe.steamOutputLimit; // kg/s
             shaft.inputTorque += GetAvailableTorque(steamFlow / steamConsumption);

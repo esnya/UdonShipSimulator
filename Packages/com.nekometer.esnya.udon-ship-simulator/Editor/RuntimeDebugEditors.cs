@@ -16,6 +16,7 @@ namespace USS2
         private static readonly FieldInfo AnchorHeadPositionField = GetField<Anchor>("headPosition");
         private static readonly FieldInfo AnchorLocalForceField = GetField<Anchor>("localForce");
         private static readonly FieldInfo RudderLocalForceField = GetField<Rudder>("localForce");
+        private static readonly FieldInfo RudderPropellersField = GetField<Rudder>("propellers");
         private static readonly FieldInfo ScrewPropellerLocalForceField = GetField<ScrewPropeller>("localForce");
 
         private static bool TryGetValue<TTarget, TValue>(FieldInfo field, TTarget target, out TValue value)
@@ -32,6 +33,35 @@ namespace USS2
 
             value = default;
             return false;
+        }
+
+        private static Vector3 GetRudderVelocity2D(Rudder rudder)
+        {
+            var vesselRigidbody = rudder.GetComponentInParent<Rigidbody>();
+            if (!vesselRigidbody)
+            {
+                return Vector3.zero;
+            }
+
+            var centerOfMass = vesselRigidbody.worldCenterOfMass;
+            var centerOfLift = rudder.transform.position;
+            var velocity = vesselRigidbody.velocity + Vector3.Cross(vesselRigidbody.angularVelocity, centerOfLift - centerOfMass);
+            return Vector3.ProjectOnPlane(velocity, rudder.transform.up);
+        }
+
+        private static Vector3 GetPropellerDeltaUS(Rudder rudder, Vector3 u, ScrewPropeller propeller, Shaft shaft)
+        {
+            if (!propeller || !shaft)
+            {
+                return Vector3.zero;
+            }
+
+            var n = shaft.n;
+            var direction = propeller.transform.forward;
+            var up = Vector3.Dot(u, direction);
+            var pitch = propeller.pitch;
+            var du = Mathf.Max(Mathf.Sign(n) * (Mathf.Pow(Mathf.Abs(up), 1.0f - 0.5f * rudder.k) * Mathf.Pow(Mathf.Abs(n) * pitch, 0.5f * rudder.k) - up), 0.0f);
+            return direction * du;
         }
 
         [DrawGizmo(GizmoType.InSelectionHierarchy | GizmoType.Selected, typeof(Anchor))]
@@ -91,6 +121,33 @@ namespace USS2
                 var scale = vesselRigidbody ? 1.0f / Mathf.Max(vesselRigidbody.mass, 1.0f) : 1.0f;
                 Gizmos.color = Color.green;
                 Gizmos.DrawRay(Vector3.zero, localForce * scale);
+
+                var u = GetRudderVelocity2D(rudder);
+                var propellers = RudderPropellersField?.GetValue(rudder) as ScrewPropeller[];
+                var deltaUS = Vector3.zero;
+                if (propellers != null)
+                {
+                    foreach (var propeller in propellers)
+                    {
+                        var shaft = propeller ? propeller.shaft : null;
+                        var dur = GetPropellerDeltaUS(rudder, u, propeller, shaft);
+                        deltaUS += dur;
+                        if (!propeller || !shaft) continue;
+
+                        var direction = propeller.transform.forward;
+                        var up = Vector3.Dot(u, direction);
+                        var pitch = propeller.pitch;
+                        var n = shaft.n;
+                        var du = Mathf.Pow(Mathf.Abs(up), 1.0f - 0.5f * rudder.k) * Mathf.Pow(Mathf.Abs(n) * pitch, 0.5f * rudder.k) - up;
+                        Handles.Label(
+                            propeller.transform.position,
+                            $"UP {up:F2} m/s\nnP {n * pitch:F2}\nUS/UP {du:F3}\nΔUR {dur.magnitude:F2} m/s");
+                    }
+                }
+
+                Handles.Label(
+                    rudder.transform.position,
+                    $"|U| {u.magnitude:F2} m/s\n|ΔUS| {deltaUS.magnitude:F2} m/s\n|F| {localForce.magnitude:F1} N");
             }
             finally
             {
@@ -113,6 +170,22 @@ namespace USS2
             var scale = vesselRigidbody ? 1.0f / Mathf.Max(vesselRigidbody.mass, 1.0f) : 1.0f;
             Gizmos.color = Color.green;
             Gizmos.DrawRay(propeller.transform.position, propeller.transform.forward * localForce * scale);
+
+            var shaft = propeller.shaft;
+            if (!shaft || !vesselRigidbody) return;
+
+            var axialSpeed = Vector3.Dot(vesselRigidbody.velocity, propeller.transform.forward);
+            var absAxialSpeed = Mathf.Abs(axialSpeed);
+            var n = shaft.n;
+            var absN = Mathf.Abs(n);
+            var j = absN > 0.0001f ? propeller.GetJ(absAxialSpeed, n) : 0.0f;
+            var torque = propeller.GetPropellerTorque(absAxialSpeed, n);
+            var thrust = propeller.GetPropellerThrust(absAxialSpeed, n) * (n < 0 ? propeller.reverseEfficiency : 1.0f);
+            var eta0 = absN > 0.0001f ? propeller.GetPropellerEfficiency(j) : 0.0f;
+
+            Handles.Label(
+                propeller.transform.position,
+                $"N {n * 60.0f:F1} rpm\nQr {torque / 1000.0f:F2} kNm\nT {thrust / 1000.0f:F2} kN\nVa {axialSpeed:F2} m/s\nJ {j:F2}\nη0 {eta0:F2}");
         }
     }
 

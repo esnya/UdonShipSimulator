@@ -102,6 +102,7 @@ namespace USS2
         {
             if (IsOwner = player.isLocal)
             {
+                if (children == null) return;
                 foreach (var child in children)
                 {
                     if (child && !Networking.IsOwner(child.gameObject)) Networking.SetOwner(player, child.gameObject);
