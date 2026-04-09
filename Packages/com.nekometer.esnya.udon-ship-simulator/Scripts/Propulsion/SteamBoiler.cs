@@ -132,7 +132,8 @@ namespace USS2
                 if (!particle) continue;
 
                 var emission = particle.emission;
-                emission.rateOverTimeMultiplier = particleEmisionRates[i] * GetParticleValue(particleTypes[i]);
+                var particleType = i < particleTypes.Length ? particleTypes[i] : 0;
+                emission.rateOverTimeMultiplier = particleEmisionRates[i] * GetParticleValue(particleType);
             }
 
             if (sound)
@@ -143,7 +144,7 @@ namespace USS2
                     sound.volume = Mathf.Pow(Mathf.Clamp01(fuelValveValue), 0.5f);
                     if (!sound.isPlaying) {
                         sound.pitch = UnityEngine.Random.Range(1.0f - soundPitchVariation, 1.0f + soundPitchVariation);
-                        sound.time = UnityEngine.Random.Range(0.0f, sound.clip.length);
+                        if (sound.clip) sound.time = UnityEngine.Random.Range(0.0f, sound.clip.length);
                         sound.Play();
                     }
                 }

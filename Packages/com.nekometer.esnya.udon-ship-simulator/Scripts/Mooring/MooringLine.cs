@@ -95,6 +95,7 @@ namespace USS2
         private void FixedUpdate()
         {
             if (!isAnyOwner) return;
+            if (!eye || !root) return;
 
             if (length < minLength)
             {
@@ -104,7 +105,7 @@ namespace USS2
 
             var lineVector = eye.position - transform.position;
             var distance = lineVector.magnitude;
-            tension = Mathf.Clamp(elasticity * (lineVector.magnitude / length - 1.0f) + (distance - prevDistance) / Time.fixedDeltaTime * damping, -breakingLoad, breakingLoad);
+            tension = Mathf.Clamp(elasticity * (lineVector.magnitude / length - 1.0f) + (distance - prevDistance) / Time.fixedDeltaTime * damping, 0.0f, breakingLoad);
             var force = lineVector.normalized * tension;
 
             if (isRootOwner) root.AddForceAtPosition(force, transform.position);
@@ -115,6 +116,7 @@ namespace USS2
         private void Update()
         {
             if (!initialized) return;
+            if (!eye || !root) return;
 
             isEyeOwner = Networking.IsOwner(eye.gameObject);
             isRootOwner = Networking.IsOwner(root.gameObject);
