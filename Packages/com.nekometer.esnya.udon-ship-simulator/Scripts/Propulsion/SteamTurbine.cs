@@ -1,7 +1,6 @@
 using System;
 using JetBrains.Annotations;
 using UdonSharp;
-using UdonToolkit;
 using UnityEngine;
 using VRC.SDKBase;
 
@@ -110,7 +109,7 @@ namespace USS2
         private void Owner_Update()
         {
             steamPipe.steamOutput += steamConsumption * steamValveValue;
-            steamFlow = Mathf.Clamp(steamPipe.steamFlow * steamValveValue, 0.0f, steamConsumption) * steamPipe.steamInputLimit; // kg/s
+            steamFlow = Mathf.Clamp(steamPipe.steamFlow * steamValveValue, 0.0f, steamConsumption) * steamPipe.steamOutputLimit; // kg/s
             shaft.inputTorque += GetAvailableTorque(steamFlow / steamConsumption);
         }
 

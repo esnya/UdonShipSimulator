@@ -3,11 +3,6 @@ using UnityEngine;
 using VRC.SDKBase;
 using VRC.Udon.Common;
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using UnityEditor;
-using UdonSharpEditor;
-#endif
-
 namespace USS2
 {
     [RequireComponent(typeof(VRC.SDK3.Components.VRCStation))]
@@ -263,7 +258,6 @@ namespace USS2
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         private void OnDrawGizmos()
         {
-            this.UpdateProxy();
             if (!seated) return;
 
             var position = SeatPosition;

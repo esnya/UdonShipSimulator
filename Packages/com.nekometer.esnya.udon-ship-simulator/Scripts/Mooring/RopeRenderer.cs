@@ -3,10 +3,6 @@ using JetBrains.Annotations;
 using UdonSharp;
 using UnityEngine;
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using UnityEditor;
-#endif
-
 namespace USS2
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -111,7 +107,7 @@ namespace USS2
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            if (!EditorApplication.isPlaying) return;
+            if (!Application.isPlaying) return;
 
             for (var i = 0; i < controlPoints.Length; i++)
             {

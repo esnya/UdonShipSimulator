@@ -4,10 +4,6 @@ using JetBrains.Annotations;
 using VRC.SDKBase;
 using System;
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using UnityEditor;
-using UdonSharpEditor;
-#endif
 
 namespace USS2
 {
@@ -204,13 +200,11 @@ namespace USS2
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            this.UpdateProxy();
-
             var vesselRigidbody = GetComponentInParent<Rigidbody>();
 
-            if (EditorApplication.isPlaying)
+            if (Application.isPlaying)
             {
-                var forceScale = SceneView.currentDrawingSceneView.size * 9.81f / (vesselRigidbody?.mass ?? 1.0f);
+                var forceScale = 9.81f / (vesselRigidbody?.mass ?? 1.0f);
                 Gizmos.color = Color.green;
                 Gizmos.DrawRay(transform.position, transform.forward * localForce * forceScale);
 
@@ -222,25 +216,6 @@ namespace USS2
 
                 Gizmos.color = Color.white;
                 Gizmos.DrawWireSphere(transform.position, diameter * 0.5f);
-
-                var j = GetJ(vs, n);
-                var eta0 = GetPropellerEfficiency(j);
-
-                Handles.Label(
-                    transform.position,
-                    string.Join("\n", new [] {
-                        $"N:\t{n * 60.0f:F2}rpm",
-                        $"Qr:\t{qr / 1000.0f:F2}kNm",
-                        $"T:\t{GetPropellerThrust(vs, n) / 1000.0f:F2}kN",
-                        "",
-                        $"Va:\t{vs:F2}m/s",
-                        $"J:\t{j:F2}",
-                        $"KT:\t{GetKT(j):F2}",
-                        $"KQ:\t{GetKQ(j):F2}",
-                        $"η0:\t{eta0:F2}",
-                        $"η:\t{GetEfficiency(vs) * eta0:F2}",
-                    })
-                );
             }
             else
             {

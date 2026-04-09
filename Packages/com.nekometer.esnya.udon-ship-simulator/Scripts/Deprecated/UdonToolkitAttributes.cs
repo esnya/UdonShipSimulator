@@ -3,9 +3,8 @@ using UnityEngine;
 
 namespace UdonToolkit
 {
-    // Minimal local compatibility layer for the attribute subset this package uses.
-    // These are inspector hints only; they intentionally preserve compilation without
-    // requiring the external UdonToolkit package.
+    // Minimal local compatibility layer for deprecated scripts that still depend on
+    // old inspector hint attributes. Active runtime code no longer references these.
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
     public sealed class ListViewAttribute : PropertyAttribute
     {

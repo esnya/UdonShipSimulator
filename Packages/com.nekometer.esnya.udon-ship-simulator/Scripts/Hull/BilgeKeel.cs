@@ -2,10 +2,6 @@ using System;
 using UdonSharp;
 using UnityEngine;
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using UdonSharpEditor;
-using UnityEditor;
-#endif
 
 namespace USS2
 {
@@ -114,12 +110,10 @@ namespace USS2
         {
             try
             {
-                this.UpdateProxy();
-
-                Handles.matrix = Gizmos.matrix = transform.localToWorldMatrix;
+                Gizmos.matrix = transform.localToWorldMatrix;
 
                 if (!vesselRigidbody) vesselRigidbody = GetComponentInParent<Rigidbody>();
-                var forceScale = SceneView.currentDrawingSceneView.size * 9.81f / (vesselRigidbody?.mass ?? 1.0f);
+                var forceScale = 9.81f / (vesselRigidbody?.mass ?? 1.0f);
 
                 Gizmos.color = Color.white;
                 Gizmos.DrawWireCube(Vector3.zero, Vector3.right * breadth + Vector3.forward * length);
@@ -132,7 +126,7 @@ namespace USS2
             }
             finally
             {
-                Handles.matrix = Gizmos.matrix = Matrix4x4.identity;
+                Gizmos.matrix = Matrix4x4.identity;
             }
         }
 #endif

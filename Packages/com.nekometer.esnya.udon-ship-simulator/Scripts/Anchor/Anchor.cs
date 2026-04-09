@@ -5,10 +5,6 @@ using JetBrains.Annotations;
 using UnityEngine.Assertions.Must;
 using System.Linq;
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using UdonSharpEditor;
-using UnityEditor;
-#endif
 
 namespace USS2
 {
@@ -326,7 +322,7 @@ namespace USS2
                     }
                 }
 
-                if ((Time.renderedFrameCount + physicsRayCastIntervalOffset) % physicsRayCastIntervalOffset == 0)
+                if ((Time.renderedFrameCount + physicsRayCastIntervalOffset) % Mathf.Max(physicsRayCastInterval, 1) == 0)
                 {
                     if (SphereCast())
                     {
@@ -403,8 +399,6 @@ namespace USS2
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            this.UpdateProxy();
-
             var hawsepiperTransform = transform;
             var hawsepiperPosition = hawsepiperTransform.position;
 
@@ -422,11 +416,11 @@ namespace USS2
                 Gizmos.DrawWireSphere(headPosition, headSize * 0.5f);
             }
 
-            if (EditorApplication.isPlaying)
+            if (Application.isPlaying)
             {
                 if (anchored)
                 {
-                    var forceScale = SceneView.currentDrawingSceneView.size / (vesselRigidbody ?? GetComponentInParent<Rigidbody>()).mass;
+                    var forceScale = 1.0f / (vesselRigidbody ?? GetComponentInParent<Rigidbody>()).mass;
                     Gizmos.color = Color.green;
                     Gizmos.DrawRay(hawsepiperPosition, hawsepiperTransform.TransformVector(localForce) * forceScale);
 

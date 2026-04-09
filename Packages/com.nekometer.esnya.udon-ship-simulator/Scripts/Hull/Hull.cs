@@ -5,11 +5,6 @@ using UnityEngine;
 using UdonShipSimulator;
 using VRC.SDKBase;
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using UnityEditor;
-using UdonSharpEditor;
-#endif
-
 namespace USS2
 {
     [DefaultExecutionOrder(200)] // After Appendages
@@ -73,7 +68,7 @@ namespace USS2
             ocean = vessel.ocean;
 
             rho = ocean ? ocean.rho : 1025.0f;
-            mu = ocean ? ocean.rho : 0.00122f;
+            mu = ocean ? ocean.mu : 0.00122f;
 
             crossSectionAreaByDraughtProfiles = new AnimationCurve[lengthSteps];
 
@@ -116,8 +111,8 @@ namespace USS2
             appendages = GetAppendages();
 
             var maxSpeed = 100.0f;
-            forwardCTProfile = GetSideCTProfile(maxSpeed);
-            sideCTProfile = GetForwardCTProfile(maxSpeed);
+            forwardCTProfile = GetForwardCTProfile(maxSpeed);
+            sideCTProfile = GetSideCTProfile(maxSpeed);
             verticalCTProfile = GetVerticalCTProfile(maxSpeed);
 
             foreach (var screwPropeller in vesselRigidbody.GetComponentsInChildren<ScrewPropeller>())
@@ -742,7 +737,7 @@ namespace USS2
             var at = 0.0f;
             var tf = designedDraught;
             var hb = tf / 2.0f;
-            var f = GetCF(GetRn(rho, mu, l, volume));
+            var f = GetCF(GetRn(rho, mu, l, v));
             var w = GetCW(surface, volume, cp, cm, cw, fn, g, v, at, hb, 0.0f, tf, lcb);
             var k1 = GetK1(cp, lcb);
             return f * (1 + k1) + w;
@@ -844,8 +839,6 @@ namespace USS2
 #if !COMPILER_UDONSHARP && UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            this.UpdateProxy();
-
             if (!initialized) return;
 
             var gravity = Physics.gravity;
@@ -854,7 +847,7 @@ namespace USS2
             var velocity = vesselRigidbody.velocity;
             var angularVelocity = vesselRigidbody.angularVelocity;
 
-            var forceScale = SceneView.currentDrawingSceneView.size * 9.81f / mass;
+            var forceScale = 9.81f / mass;
 
             for (var index = 0; index < blocks; index++)
             {

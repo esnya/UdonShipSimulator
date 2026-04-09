@@ -1,10 +1,13 @@
 {
-    "name": "UdonShipSimulator",
+    "name": "UdonShipSimulator.Deprecated",
     "references": [
         "VRC.Udon",
+        "VRC.Udon.Editor",
         "UdonSharp.Runtime",
+        "UdonSharp.Editor",
         "InariUdonRuntime",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "UdonShipSimulator"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [],

@@ -2,10 +2,6 @@ using System;
 using UdonSharp;
 using UnityEngine;
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using UdonSharpEditor;
-#endif
-
 namespace USS2
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
@@ -138,8 +134,6 @@ namespace USS2
         private void OnDrawGizmosSelected()
         {
             try {
-                this.UpdateProxy();
-
                 Gizmos.matrix = transform.localToWorldMatrix;
 
                 Gizmos.color = Color.red;

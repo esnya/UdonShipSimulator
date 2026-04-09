@@ -1,9 +1,5 @@
 using UdonSharp;
 using UnityEngine;
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
-using UdonSharpEditor;
-using UnityEditor;
-#endif
 
 namespace USS2
 {
@@ -15,7 +11,7 @@ namespace USS2
         /// </summary>
         public float speed = 2.0f;
 
-#if !COMPILER_UDONSHARP && UNITY_EDITOR
+#if UNITY_EDITOR
         private void Reset()
         {
             gameObject.layer = 18;
