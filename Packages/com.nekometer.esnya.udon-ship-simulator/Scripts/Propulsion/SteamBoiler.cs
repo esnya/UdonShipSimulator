@@ -97,9 +97,12 @@ namespace USS2
         private float cp = Ocean.WaterCp;
         private float ta = Ocean.AtmosphericTemperature;
         private float pa = Ocean.AtmosphericPressure;
+        private GameObject vesselGameObject;
 
         private void Start()
         {
+            var vesselRigidbody = GetComponentInParent<Rigidbody>();
+            vesselGameObject = vesselRigidbody ? vesselRigidbody.gameObject : gameObject;
             if (!steamPipe) steamPipe = GetComponentInParent<SteamPipe>();
 
             particleEmisionRates = new float[particles.Length];
@@ -124,7 +127,7 @@ namespace USS2
         private void Update()
         {
             fuelFlow = fuelValveValue * fuelConsumpsion;
-            if (Networking.IsOwner(gameObject)) Owner_Update();
+            if (Networking.IsOwner(vesselGameObject)) Owner_Update();
 
             for (var i = 0; i < particles.Length; i++)
             {

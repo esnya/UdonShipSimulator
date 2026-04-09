@@ -23,9 +23,12 @@ namespace USS2
         /// </summary>
         public float steamInput;
         public float steamOutput;
+        private GameObject vesselGameObject;
 
         private void Start()
         {
+            var vesselRigidbody = GetComponentInParent<Rigidbody>();
+            vesselGameObject = vesselRigidbody ? vesselRigidbody.gameObject : gameObject;
             steamFlow = 0;
             steamInputLimit = 1.0f;
             steamOutputLimit = 1.0f;
@@ -33,7 +36,7 @@ namespace USS2
 
         private void LateUpdate()
         {
-            if (Networking.IsOwner(gameObject))
+            if (Networking.IsOwner(vesselGameObject))
             {
                 var deltaTime = Time.deltaTime;
                 var smoothing = capacity <= 0.0f ? 1.0f : Mathf.Clamp01(deltaTime / capacity);

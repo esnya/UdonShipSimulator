@@ -38,15 +38,18 @@ namespace USS2
         [UdonSynced(UdonSyncMode.Smooth)][NonSerialized] public float currentInputTorque;
         [UdonSynced(UdonSyncMode.Smooth)][NonSerialized] public float currentLoadTorque;
         [UdonSynced(UdonSyncMode.Smooth)][NonSerialized] public float currentEfficiency;
+        private GameObject vesselGameObject;
 
         private void Start()
         {
+            var vesselRigidbody = GetComponentInParent<Rigidbody>();
+            vesselGameObject = vesselRigidbody ? vesselRigidbody.gameObject : gameObject;
             surfaceArea = Mathf.PI * diameter * length;
         }
 
         private void LateUpdate()
         {
-            if (Networking.IsOwner(gameObject)) Owner_LateUpdate();
+            if (Networking.IsOwner(vesselGameObject)) Owner_LateUpdate();
         }
 
         private void Owner_LateUpdate()

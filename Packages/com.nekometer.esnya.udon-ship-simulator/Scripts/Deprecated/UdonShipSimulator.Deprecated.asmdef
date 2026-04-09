@@ -14,5 +14,7 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [
+        "UDON_SHIP_SIMULATOR_ENABLE_DEPRECATED"
+    ]
 }
