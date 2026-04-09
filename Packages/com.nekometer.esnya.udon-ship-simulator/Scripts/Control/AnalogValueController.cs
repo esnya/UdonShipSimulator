@@ -71,6 +71,7 @@ namespace USS2
                 {
                     var t = visualTransforms[i];
                     if (!t) continue;
+                    if (i >= rotationScales.Length || i >= rotationAxises.Length) continue;
 
                     t.localRotation = Quaternion.AngleAxis((_value + valueBias) * rotationScales[i], rotationAxises[i]);
                 }
